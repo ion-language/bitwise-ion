@@ -2,6 +2,7 @@ typedef enum Os {
     OS_WIN32,
     OS_LINUX,
     OS_OSX,
+    OS_FREESTANDING,
     NUM_OSES,
 } Os;
 
@@ -9,17 +10,22 @@ const char *os_names[NUM_OSES] = {
     [OS_WIN32] = "win32",
     [OS_LINUX] = "linux",
     [OS_OSX] = "osx",
+    [OS_FREESTANDING] = "freestanding",
 };
 
 typedef enum Arch {
     ARCH_X64,
     ARCH_X86,
+    ARCH_PS2_EE,
+    ARCH_PS2_IOP,
     NUM_ARCHES,
 } Arch;
 
 const char *arch_names[NUM_ARCHES] = {
     [ARCH_X64] = "x64",
     [ARCH_X86] = "x86",
+    [ARCH_PS2_EE]  = "ee",
+    [ARCH_PS2_IOP] = "iop",
 };
 
 int target_os;
@@ -116,6 +122,16 @@ void init_target(void) {
         switch (target_arch) {
         case ARCH_X64:
             type_metrics = lp64_metrics;
+            break;
+        default:
+            break;
+        }
+        break;
+    case OS_FREESTANDING:
+        switch (target_arch) {
+        case ARCH_PS2_EE:
+        case ARCH_PS2_IOP:
+            type_metrics = ilp32_metrics;
             break;
         default:
             break;

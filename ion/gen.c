@@ -1338,7 +1338,7 @@ void preprocess_packages(void) {
     }
 }
 
-void gen_typeinfo_header(const char *kind, Type *type) { 
+void gen_typeinfo_header(const char *kind, Type *type) {
     if (type_sizeof(type) == 0) {
         genf("&(TypeInfo){%s, .size = 0, .align = 0", kind);
     } else {
