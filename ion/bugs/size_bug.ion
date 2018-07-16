@@ -1,0 +1,12 @@
+#foreign(header="size_bug.h",source="size_bug.c")
+
+@foreign("fetch_value")
+func fetch_value(dest_ptr : void*, dest_size_ptr : usize*) : int;
+
+func main(argc : int, argv : char**) : int
+{
+  num : int;
+  num_size := sizeof(num);
+  fetch_value(&num, &num_size);
+  return num;
+}
