@@ -31,6 +31,8 @@ const char **keywords;
 
 const char *always_name;
 const char *foreign_name;
+const char *foreign_import_by_ordinal_name;
+const char *foreign_library_name;
 const char *inline_name;
 const char *complete_name;
 const char *assert_name;
@@ -79,6 +81,8 @@ void init_keywords(void) {
 
     always_name = str_intern("always");
     foreign_name = str_intern("foreign");
+    foreign_import_by_ordinal_name = str_intern("foreign_import_by_ordinal");
+    foreign_library_name = str_intern("foreign_library");
     inline_name = str_intern("inline");
     complete_name = str_intern("complete");
     assert_name = str_intern("assert");

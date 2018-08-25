@@ -23,6 +23,8 @@ typedef struct Sym {
     uint8_t reachable;
     Decl *decl;
     const char *external_name;
+    const char *library_name;
+    int library_ordinal;
     union {
         struct {
             Type *type;
@@ -106,6 +108,7 @@ Sym *sym_new(SymKind kind, const char *name, Decl *decl) {
 
 void process_decl_notes(Decl *decl, Sym *sym) {
     Note *foreign_note = get_decl_note(decl, foreign_name);
+    Note *foreign_import_by_ordinal_note = get_decl_note(decl, foreign_import_by_ordinal_name);
     if (foreign_note) {
         if (foreign_note->num_args > 1) {
             fatal_error(decl->pos, "@foreign takes 0 or 1 argument");
@@ -121,6 +124,29 @@ void process_decl_notes(Decl *decl, Sym *sym) {
             external_name = arg->str_lit.val;
         }
         sym->external_name = external_name;
+    }
+    if (foreign_import_by_ordinal_note) {
+        const char* library_name = str_intern("library");
+        const char* ordinal_name = str_intern("ordinal");
+        const char *note_name = foreign_import_by_ordinal_name;
+        Note *note = foreign_import_by_ordinal_note;
+        for (size_t i = 0; i<note->num_args; i++) {
+            NoteArg arg = note->args[i];
+            Expr *expr = arg.expr;
+            if (arg.name == library_name) {
+                if (expr->kind != EXPR_STR) {
+                    fatal_error(decl->pos, "@%s argument %s expects a string", note_name, arg.name);
+                }
+                sym->library_name = str_intern(expr->str_lit.val);
+            } else if (arg.name == ordinal_name) {
+                if (expr->kind != EXPR_INT) {
+                    fatal_error(decl->pos, "@%s argument %s expects an integer", note_name, arg.name);
+                }
+                sym->library_ordinal = expr->int_lit.val;
+            } else {
+                fatal_error(decl->pos, "Unknown argument to @foreign_import_by_ordinal: '%s'", arg.name);
+            }
+        }
     }
 }
 

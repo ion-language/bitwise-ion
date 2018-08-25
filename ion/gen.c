@@ -1271,6 +1271,82 @@ void gen_foreign_sources(void) {
     }
 }
 
+typedef struct ForeignLibrary
+{
+    const char* name;
+    int version_major;
+    int version_minor;
+    SrcPos pos;
+    char const* stubs_to_generate;
+} ForeignLibrary;
+
+Map gen_foreign_library_map;
+
+const char* irx_preamble_str = 
+    "// IRX Preamble\n"
+    "// Only for GCC\n"
+    "#define IRX_VER(major, minor)	((((major) & 0xff) << 8) + ((minor) & 0xff))\n"
+    "#define IRX_IMPORT_MAGIC	0x41e00000\n"
+    "struct irx_import_table\n"
+    "{\n"
+	"    uint32_t magic;\n"
+	"    struct irx_import_table *next;\n"
+    "    uint16_t version;\n"
+	"    uint16_t mode;\n"
+	"    char name[8];\n"
+	"    void *stubs[0];\n"
+    "} __attribute__ ((packed));\n"
+    "#define IRX_IMPORT_BEGIN(modname, major, minor) "
+    "static struct irx_import_table _imp_##modname "
+	"__attribute__((section(\".text\\n\\t#\"), unused))= {	"
+	"magic: IRX_IMPORT_MAGIC, version: IRX_VER(major, minor), "
+	"name: #modname, };\n"
+    "#define IRX_STR(val) #val\n"
+    "#define IRX_IMPORT(ord, name) "
+    "__asm__ (\".section\\t.text\\n\\t\" "
+	"\".globl\t\"#name\"\\n\\t\"#name\":\\n\\t\" "	
+	"\".word 0x3e00008\\n\\t\" "
+	"\".word \"IRX_STR(0x24000000|ord));\n"
+    "#define IRX_IMPORT_END "
+	"__asm__ (\".section\\t.text\\n\\t.word\\t0, 0\");\n";
+    
+void gen_foreign_library_symbols_stubs(void) {
+    Map *map = &gen_foreign_library_map;
+    size_t num_libraries = map->len;
+
+    if (num_libraries == 0) {
+        return;
+    }
+    assert(target_arch == ARCH_PS2_IOP);
+    genf(irx_preamble_str);
+
+    size_t num_remaining = num_libraries;
+    for (int i = 0; i < map->cap && num_remaining > 0; i++) {
+        if (!map->keys[i]) { 
+            continue; 
+        }
+        ForeignLibrary *lib = map_get(map, (void*)map->keys[i]);
+        genlnf("// Stubs for %s %d.%d", lib->name, lib->version_major, lib->version_minor);
+        genlnf("IRX_IMPORT_BEGIN(%s, %d, %d)", lib->name, lib->version_major, lib->version_minor);
+        // @todo @perf O(2) because our symbols aren't sorted by library
+        for (Sym **it = sorted_syms; it != buf_end(sorted_syms); it++) {
+            Sym *sym = *it;
+            Decl *decl = sym->decl;
+            if (!decl || !is_sym_reachable(sym)) {
+                continue;
+            }
+            if (sym->kind != SYM_FUNC) {
+                continue;
+            }
+            if (sym->library_name != lib->name) {
+                continue;
+            }
+            genlnf("IRX_IMPORT(%d, %s)", sym->library_ordinal, get_gen_name(sym));
+        }
+        genlnf("IRX_IMPORT_END");
+    }
+}
+
 const char **gen_sources_buf;
 
 static void put_include_path(char path[MAX_PATH], Package *package, const char *filename) {
@@ -1296,6 +1372,9 @@ static void preprocess_package(Package *package) {
     const char *source_name = str_intern("source");
     const char *preamble_name = str_intern("preamble");
     const char *postamble_name = str_intern("postamble");
+    const char *library_name = str_intern("library");
+    const char *major_name = str_intern("major");
+    const char *minor_name = str_intern("minor");
     for (size_t i = 0; i < package->num_decls; i++) {
         Decl *decl = package->decls[i];
         if (decl->kind != DECL_NOTE) {
@@ -1328,6 +1407,41 @@ static void preprocess_package(Package *package) {
                     fatal_error(decl->pos, "Unknown #foreign named argument '%s'", arg.name);
                 }
             }
+        } else if (note.name == foreign_library_name) {
+            ForeignLibrary foreign_library = {
+                .pos = decl->pos,
+            };
+            for (size_t k = 0; k < note.num_args; k++) {
+                NoteArg arg = note.args[k];
+                Expr *expr = arg.expr;
+                if (arg.name == library_name) {
+                    if (expr->kind != EXPR_STR) {
+                        fatal_error(decl->pos, "#foreign_library expects a string for argument 'library'");
+                    }
+                    foreign_library.name = str_intern(expr->str_lit.val);
+                } else if (arg.name == major_name) {
+                    if (expr->kind != EXPR_INT) {
+                        fatal_error(decl->pos, "#foreign_library expects an integer for argument 'major'");
+                    }
+                    foreign_library.version_major = expr->int_lit.val;
+                } else if (arg.name == minor_name) {
+                    if (expr->kind != EXPR_INT) {
+                        fatal_error(decl->pos, "#foreign_library expects an integer for argument 'minor'");
+                    }
+                    foreign_library.version_minor = expr->int_lit.val;
+                } else {
+                    fatal_error(decl->pos, "Unknown #foreign_library named argument '%s'", arg.name);
+                }
+            }
+            // if something must be done
+            if (!foreign_library.name) {
+                fatal_error(decl->pos, "#foreign_library expects at least a library name");
+            }
+            ForeignLibrary *existing = map_get(&gen_foreign_library_map, foreign_library.name);
+            if (existing) {
+                fatal_error(decl->pos, "duplicate #foreign_library directive, existing: %s(%d)", existing->pos.name, existing->pos.line);
+            }
+            map_put(&gen_foreign_library_map, foreign_library.name, memdup(&foreign_library, sizeof(foreign_library)));
         }
     }
 }
@@ -1506,6 +1620,9 @@ void gen_all(void) {
     gen_typeinfos();
     gen_defs();
     gen_foreign_sources();
+    genln();
+    genlnf("// Foreign library symbols stubs");
+    gen_foreign_library_symbols_stubs();
     genln();
     gen_postamble();
     char *buf = gen_buf;
