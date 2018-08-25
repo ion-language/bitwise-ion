@@ -28,6 +28,16 @@ const char *arch_names[NUM_ARCHES] = {
     [ARCH_PS2_IOP] = "iop",
 };
 
+const char* program_entry_points[] = { "main", NULL };
+const char* irx_entry_points[] = {"_start", "_stop", NULL };
+
+const char**arch_entry_points[NUM_ARCHES] = {
+    [ARCH_X64] = program_entry_points,
+    [ARCH_X86] = program_entry_points,
+    [ARCH_PS2_EE] = program_entry_points,
+    [ARCH_PS2_IOP] = irx_entry_points,
+};
+
 int target_os;
 int target_arch;
 

@@ -124,15 +124,18 @@ int ion_main(int argc, const char **argv) {
         printf("error: Failed to compile package '%s'\n", package_name);
         return 1;
     }
-    const char *main_name = str_intern("main");
-    Sym *main_sym = get_package_sym(main_package, main_name);
-    if (!main_sym) {
-        printf("error: No 'main' entry point defined in package '%s'\n", package_name);
-        return 1;
-    }
-    main_sym->external_name = main_name;
+
     reachable_phase = REACHABLE_NATURAL;
-    resolve_sym(main_sym);
+    for(const char** p = arch_entry_points[target_arch]; *p; p++) {
+        const char* main_name = str_intern(*p);
+        Sym *main_sym = get_package_sym(main_package, main_name);
+        if (!main_sym) {
+            printf("error: No '%s' entry point defined in package '%s'\n", main_name, package_name);
+            return 1;
+        }
+        main_sym->external_name = main_name;
+        resolve_sym(main_sym);
+    }
     for (size_t i = 0; i < buf_len(package_list); i++) {
         if (package_list[i]->always_reachable) {
             resolve_package_syms(package_list[i]);
