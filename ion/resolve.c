@@ -2012,6 +2012,11 @@ Operand resolve_expr_compound(Expr *expr, Type *expected_type) {
         if (type == type_void) {
             fatal_error(expr->pos, "Anonymous compound literal in context expecting void type");
         }
+        if (!is_scalar_type(type)) {
+            // may happen with `void` for a compound literal used in return expressions
+            // @todo @revisit if instead, return expr should not simply trigger an error early for a void result type
+            fatal_error(expr->pos, "Compound literal where %s is expected", get_type_name(type));
+        }
         assert(is_scalar_type(type));
         if (expr->compound.num_fields > 1) {
             fatal_error(expr->pos, "Compound literal for scalar type cannot have more than one operand");
