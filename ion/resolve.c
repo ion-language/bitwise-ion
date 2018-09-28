@@ -1763,7 +1763,7 @@ Operand resolve_expr_compound(Expr *expr, Type *expected_type) {
             } else if (field.kind == FIELD_NAME) {
                 index = aggregate_item_field_index(type, field.name);
                 if (index == -1) {
-                    fatal_error(field.pos, "Named field in compound literal does not exist");
+                    fatal_error(field.pos, "Named field '%s' in compound literal does not exist", field.name);
                 }
             }
             if (index >= (int)type->aggregate.num_fields) {
