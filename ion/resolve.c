@@ -535,8 +535,11 @@ bool cast_operand(Operand *operand, Type *type) {
 }
 
 bool convert_operand(Operand *operand, Type *type) {
-    if (is_convertible(operand, type)) {
-        cast_operand(operand, type);
+    bool convertible = is_convertible(operand, type);
+    if (type == type_any || convertible) {
+        if (convertible) {
+            cast_operand(operand, type);
+        }
         operand->type = unqualify_type(operand->type);
         operand->is_lvalue = false;
         return true;
@@ -924,6 +927,10 @@ Type *resolve_typed_init(SrcPos pos, Type *type, Expr *expr) {
     }
     if (!convert_operand(&operand, expected_type)) {
         return NULL;
+    }
+    // any initializers
+    if (is_implicit_any(expr)) {
+        return type_any;
     }
     set_resolved_expected_type(expr, operand.type);
     return operand.type;

@@ -620,7 +620,7 @@ void gen_expr(Expr *expr) {
     bool gen_any = is_implicit_any(expr);
     if (gen_any) {
         type = get_resolved_type(expr);
-        genf("(any){(%s[]){", type_to_cdecl(type, ""));
+        genf("(any){(%s[]){", type_to_cdecl(type, "")); // l-value litteral
     }
     switch (expr->kind) {
     case EXPR_PAREN:
@@ -790,7 +790,7 @@ void gen_expr(Expr *expr) {
         assert(0);
     }
     if (gen_any) {
-        genf("}, ");
+        genf("}, "); // end l-value litteral
         gen_typeid(type);
         genf("}");
     }

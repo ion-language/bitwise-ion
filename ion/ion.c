@@ -108,7 +108,7 @@ int ion_main(int argc, const char **argv) {
     postinit_builtin();
     Sym *any_sym = resolve_name(str_intern("any"));
     if (!any_sym || any_sym->kind != SYM_TYPE) {
-        printf("error: Any type not defined");
+        printf("error: any type not defined in builtins");
         return 1;
     }
     type_any = any_sym->type;
@@ -118,6 +118,7 @@ int ion_main(int argc, const char **argv) {
             *ptr = '/';
         }
     }
+
     Package *main_package = import_package(package_name);
     if (!main_package) {
         printf("error: Failed to compile package '%s'\n", package_name);

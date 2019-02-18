@@ -703,6 +703,7 @@ func test_typeinfo() {
     f := 3.14;
     p := NULL;
 
+    // test implicit any
     println_any(i);
     println_any(42);
     println_any({&i, typeof(i)});
@@ -710,6 +711,20 @@ func test_typeinfo() {
     println_any({&p, typeof(p)});
 
     printf_any("Hello: %s %s %s\n", 42, 3.14, "Per");
+
+    // test implicit any in initializations:
+    temp: any = i;
+    println_any(temp);
+    temp = 42;
+    println_any(temp);
+
+    array_of_any: any[3] = { 42, "Hello", 3, };
+    any_of_array: any = (:int[3]){ 42, 3, };
+
+    println_any(array_of_any);
+    println_any(any_of_array);
+
+    //...
 
     println_type(typeof(int));
     println_type(typeof(:int const*));
