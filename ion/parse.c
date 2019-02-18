@@ -18,9 +18,11 @@ Typespec *parse_type_func_param(void) {
 }
 
 Typespec *parse_type_func(void) {
+    // BANANA
     SrcPos pos = token.pos;
     Typespec **args = NULL;
     bool has_varargs = false;
+    Typespec *varargs_type = NULL; // for typed variadics
     expect_token(TOKEN_LPAREN);
     if (!is_token(TOKEN_RPAREN)) {
         buf_push(args, parse_type_func_param());
@@ -28,6 +30,9 @@ Typespec *parse_type_func(void) {
             if (match_token(TOKEN_ELLIPSIS)) {
                 if (has_varargs) {
                     error_here("Multiple ellipsis instances in function type");
+                }
+                if (!is_token(TOKEN_RPAREN)) {
+                    varargs_type = parse_type();
                 }
                 has_varargs = true;
             } else {
@@ -43,7 +48,7 @@ Typespec *parse_type_func(void) {
     if (match_token(TOKEN_COLON)) {
         ret = parse_type();
     }
-    return new_typespec_func(pos, args, buf_len(args), ret, has_varargs);
+    return new_typespec_func(pos, args, buf_len(args), ret, has_varargs, varargs_type);
 }
 
 Typespec *parse_type_base(void) {
@@ -731,16 +736,21 @@ FuncParam parse_decl_func_param(void) {
 }
 
 Decl *parse_decl_func(SrcPos pos) {
+    // BANANA
     const char *name = parse_name();
     expect_token(TOKEN_LPAREN);
     FuncParam *params = NULL;
     bool has_varargs = false;
+    Typespec *varargs_type = NULL; // typed variadics
     if (!is_token(TOKEN_RPAREN)) {
         buf_push(params, parse_decl_func_param());
         while (match_token(TOKEN_COMMA)) {
             if (match_token(TOKEN_ELLIPSIS)) {
                 if (has_varargs) {
                     error_here("Multiple ellipsis in function declaration");
+                }
+                if (!is_token(TOKEN_RPAREN)) {
+                    varargs_type = parse_type();
                 }
                 has_varargs = true;
             } else {
@@ -764,7 +774,7 @@ Decl *parse_decl_func(SrcPos pos) {
         block = parse_stmt_block();
         is_incomplete = false;
     }
-    Decl *decl = new_decl_func(pos, name, params, buf_len(params), ret_type, has_varargs, block);
+    Decl *decl = new_decl_func(pos, name, params, buf_len(params), ret_type, has_varargs, varargs_type, block);
     decl->is_incomplete = is_incomplete;
     return decl;
 }

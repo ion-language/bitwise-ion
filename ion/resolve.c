@@ -286,6 +286,9 @@ void put_type_name(char **buf, Type *type) {
             }
             if (type->func.has_varargs) {
                 buf_printf(*buf, "...");
+                if (type->func.varargs_type) {
+                    put_type_name(buf, type->func.varargs_type);
+                }
             }
             buf_printf(*buf, ")");
             if (type->func.ret != type_void) {
@@ -719,7 +722,7 @@ Type *resolve_typespec(Typespec *typespec) {
         if (is_array_type(ret)) {
             fatal_error(typespec->pos, "Function return type cannot be array");
         }
-        result = type_func(args, buf_len(args), ret, false);
+        result = type_func(args, buf_len(args), ret, /*has_varargs*/false, /*varargs_type*/NULL);
         break;
     }
     default:
@@ -884,6 +887,12 @@ Type *resolve_decl_func(Decl *decl) {
         }
         buf_push(params, param);
     }
+    Type *varargs_type = NULL;
+    if (decl->func.varargs_type) {
+        assert(decl->func.has_varargs);
+        varargs_type = resolve_typespec(decl->func.varargs_type);
+        complete_type(varargs_type);
+    }
     Type *ret_type = type_void;
     if (decl->func.ret_type) {
         ret_type = resolve_typespec(decl->func.ret_type);
@@ -892,7 +901,7 @@ Type *resolve_decl_func(Decl *decl) {
     if (is_array_type(ret_type)) {
         fatal_error(decl->pos, "Function return type cannot be array");
     }
-    return type_func(params, buf_len(params), ret_type, decl->func.has_varargs);
+    return type_func(params, buf_len(params), ret_type, decl->func.has_varargs, varargs_type);
 }
 
 typedef struct StmtCtx {
@@ -1854,18 +1863,19 @@ Operand resolve_expr_call(Expr *expr) {
     if (expr->call.num_args > num_params && !func.type->func.has_varargs) {
         fatal_error(expr->pos, "Function call with too many arguments");
     }
-    for (size_t i = 0; i < num_params; i++) {
-        Type *param_type = func.type->func.params[i];
+    for (size_t i = 0; i < expr->call.num_args; i++) {
+        bool is_variadic = i >= num_params;
+        Type *param_type = is_variadic ? func.type->func.varargs_type : func.type->func.params[i];
         Operand arg = resolve_expected_expr_rvalue(expr->call.args[i], param_type);
+        if (param_type == NULL) {
+            continue;
+        }
         if (is_array_type(param_type)) {
             param_type = type_ptr(param_type->base);
         }
         if (!convert_operand(&arg, param_type)) {
-            fatal_error(expr->call.args[i]->pos, "Invalid type in function call argument. Expected %s, got %s", get_type_name(param_type), get_type_name(arg.type));
+            fatal_error(expr->call.args[i]->pos, "Invalid type in %sfunction call argument. Expected %s, got %s", is_variadic? "variadic " : "", get_type_name(param_type), get_type_name(arg.type));
         }
-    }
-    for (size_t i = num_params; i < expr->call.num_args; i++) {
-        resolve_expr_rvalue(expr->call.args[i]);
     }
     return operand_rvalue(func.type->func.ret);
 }

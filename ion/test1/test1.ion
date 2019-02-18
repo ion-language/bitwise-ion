@@ -114,7 +114,7 @@ func test_loops() {
     while (0) {
     }
     for (i := 0; i < 10; i++) {
-    }   
+    }
     for (;;) {
         break;
     }
@@ -355,6 +355,7 @@ func va_test(x: int, ...): int {
 }
 
 typedef F = func(x: int, ...): int;
+typedef G = func(x: int, ...char): int;
 
 func test_lits() {
     f := 3.14;
@@ -680,15 +681,36 @@ func test_typeinfo() {
 
     // Demonstrate typeinfos for enums:
     o := Options_B;
-    println_any({&o, typeof(o)});
+    println_any(o);
     println_typeinfo(typeof(o));
 
     o = 32;
-    println_any({&o, typeof(o)});
+    println_any(o);
 
     so := subtest1.SubOptions_I;
-    println_any({&so, typeof(so)});
+    println_any(so);
     println_typeinfo(typeof(so));
+}
+
+var stack: char[1024];
+var stack_ptr = stack;
+
+func push(x: Any) {
+    size := typeid_size(x.type);
+    memcpy(stack_ptr, x.ptr, size);
+    stack_ptr += size;
+}
+
+func test_push() {
+    push(42);
+    push("Hello"); // Note, "Hello" type is decayed into a ptr.
+    push("World");
+
+    // Inspect the stack, we expect 42 as a uint32, then two uintptr
+    for (p := &stack[0]; p < stack_ptr; p++) {
+        printf("0x%x ", p[0]);
+    }
+    printf("\n");
 }
 
 struct Ints {
@@ -710,6 +732,46 @@ func test_va_list(fmt: char const*, ...) {
     ll: llong;
     va_arg(&args, {&ll, typeof(ll)});
     printf("c=%d i=%d ll=%lld\n", c, i, ll);
+    va_end(&args);
+}
+
+// NOTE(nicolas): this doesn't work yet
+/*
+func test_typed_va_list_any(fmt: char const*, ...Any) {
+    init_args: va_list;
+    va_start(&init_args, &fmt);
+    args: va_list;
+    va_copy(&args, &init_args);
+    va_end(&init_args);
+    x: Any;
+    va_arg(&args, {&x, typeof(x)});
+    y: Any;
+    va_arg(&args, {&y, typeof(y)});
+    z: Any;
+    va_arg(&args, {&z, typeof(z)});
+    print_any(x);
+    printf(", ");
+    print_any(y);
+    printf(", ");
+    print_any(z);
+    printf("\n");
+    va_end(&args);
+}
+*/
+
+func test_typed_va_list_int(fmt: char const*, ...int) {
+    init_args: va_list;
+    va_start(&init_args, &fmt);
+    args: va_list;
+    va_copy(&args, &init_args);
+    va_end(&init_args);
+    i1: int;
+    i2: int;
+    i3: int;
+    va_arg(&args, {&i1, typeof(i1)});
+    va_arg(&args, {&i2, typeof(i2)});
+    va_arg(&args, {&i3, typeof(i3)});
+    printf("0=%d 1=%d 2=%d\n", i1, i2, i3);
     va_end(&args);
 }
 
@@ -943,6 +1005,8 @@ func main(argc: int, argv: char**): int {
     test_const_ptr_deref();
     test_limits();
     test_va_list("whatever", char(123), int(123123), llong(123123123123));
+// test_typed_va_list_any("whatever", char(123), int(123123), llong(123123123123)); // NOTE(nicolas): this doesn't work yet
+    test_typed_va_list_int("whatever", int(123123), char(123), uint(123));
     test_os_arch();
     test_packages();
     test_if();
@@ -964,6 +1028,7 @@ func main(argc: int, argv: char**): int {
     test_bool();
     test_ops();
     test_typeinfo();
+    test_push();
     test_reachable();
     test_type_path();
     gc();

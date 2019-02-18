@@ -64,12 +64,13 @@ Typespec *new_typespec_array(SrcPos pos, Typespec *elem, Expr *size) {
     return t;
 }
 
-Typespec *new_typespec_func(SrcPos pos, Typespec **args, size_t num_args, Typespec *ret, bool has_varargs) {
+Typespec *new_typespec_func(SrcPos pos, Typespec **args, size_t num_args, Typespec *ret, bool has_varargs, Typespec *varargs_type) {
     Typespec *t = new_typespec(TYPESPEC_FUNC, pos);
     t->func.args = AST_DUP(args);
     t->func.num_args = num_args;
     t->func.ret = ret;
     t->func.has_varargs = has_varargs;
+    t->func.varargs_type = varargs_type;
     return t;
 }
 
@@ -133,12 +134,13 @@ Decl *new_decl_var(SrcPos pos, const char *name, Typespec *type, Expr *expr) {
     return d;
 }
 
-Decl *new_decl_func(SrcPos pos, const char *name, FuncParam *params, size_t num_params, Typespec *ret_type, bool has_varargs, StmtList block) {
+Decl *new_decl_func(SrcPos pos, const char *name, FuncParam *params, size_t num_params, Typespec *ret_type, bool has_varargs, Typespec *varargs_type, StmtList block) {
     Decl *d = new_decl(DECL_FUNC, pos, name);
     d->func.params = AST_DUP(params);
     d->func.num_params = num_params;
     d->func.ret_type = ret_type;
     d->func.has_varargs = has_varargs;
+    d->func.varargs_type = varargs_type;
     d->func.block = block;
     return d;
 }

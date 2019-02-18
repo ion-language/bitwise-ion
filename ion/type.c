@@ -62,6 +62,7 @@ struct Type {
             Type **params;
             size_t num_params;
             bool has_varargs;
+            Type *varargs_type;
             Type *ret;
         } func;
     };
@@ -335,14 +336,14 @@ typedef struct CachedFuncType {
 
 Map cached_func_types;
 
-Type *type_func(Type **params, size_t num_params, Type *ret, bool has_varargs) {
+Type *type_func(Type **params, size_t num_params, Type *ret, bool has_varargs, Type *varargs_type) {
     size_t params_size = num_params * sizeof(*params);
     uint64_t hash = hash_mix(hash_bytes(params, params_size), hash_ptr(ret));
     uint64_t key = hash ? hash : 1;
     CachedFuncType *cached = map_get_from_uint64(&cached_func_types, key);
     for (CachedFuncType *it = cached; it; it = it->next) {
         Type *type = it->type;
-        if (type->func.num_params == num_params && type->func.ret == ret && type->func.has_varargs == has_varargs) {
+        if (type->func.num_params == num_params && type->func.ret == ret && type->func.has_varargs == has_varargs && type->func.varargs_type == varargs_type) {
             if (memcmp(type->func.params, params, params_size) == 0) {
                 return type;
             }
@@ -354,6 +355,7 @@ Type *type_func(Type **params, size_t num_params, Type *ret, bool has_varargs) {
     type->func.params = memdup(params, params_size);
     type->func.num_params = num_params;
     type->func.has_varargs = has_varargs;
+    type->func.varargs_type = varargs_type;
     type->func.ret = ret;
     CachedFuncType *new_cached = xmalloc(sizeof(CachedFuncType));
     new_cached->type = type;

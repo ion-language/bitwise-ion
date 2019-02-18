@@ -49,6 +49,7 @@ struct Typespec {
             Typespec **args;
             size_t num_args;
             bool has_varargs;
+            Typespec *varargs_type;
             Typespec *ret;
         } func;
         Expr *num_elems;
@@ -138,6 +139,7 @@ struct Decl {
             size_t num_params;
             Typespec *ret_type;
             bool has_varargs;
+            Typespec *varargs_type;
             StmtList block;
         } func;
         struct {
@@ -248,7 +250,7 @@ struct Expr {
         } compound;
         struct {
             Typespec *type;
-            Expr *expr;            
+            Expr *expr;
         } cast;
         struct {
             TokenKind op;
@@ -272,7 +274,7 @@ struct Expr {
         struct {
             Expr *expr;
             Expr **args;
-            size_t num_args;            
+            size_t num_args;
         } call;
         struct {
             Expr *expr;
@@ -336,7 +338,7 @@ struct Stmt {
             StmtList then_block;
             ElseIf *elseifs;
             size_t num_elseifs;
-            StmtList else_block;            
+            StmtList else_block;
         } if_stmt;
         struct {
             Expr *cond;
@@ -351,7 +353,7 @@ struct Stmt {
         struct {
             Expr *expr;
             SwitchCase *cases;
-            size_t num_cases;            
+            size_t num_cases;
         } switch_stmt;
         StmtList block;
         struct {
