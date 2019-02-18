@@ -652,6 +652,22 @@ func test_typeinfo() {
     println_any({&f, typeof(f)});
     println_any({&p, typeof(p)});
 
+    // test implicit casts to Any
+    println_any(i);
+    println_any(42);
+
+    temp: Any = i;
+    println_any(temp);
+
+    temp = 42;
+    println_any(temp);
+
+    foo: Any[3] = { 42, "Hello", 3, };
+    bar: Any = (:int[3]){ 42, 3, };
+
+    println_any(foo);
+    println_any(bar);
+
     println_type(typeof(int));
     println_type(typeof(:int const*));
     println_type(typeof(:int const*[42]));

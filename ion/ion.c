@@ -103,6 +103,16 @@ int ion_main(int argc, const char **argv) {
         return 1;
     }
     builtin_package->external_name = str_intern("");
+
+    enter_package(builtin_package);
+    Sym *any_sym = resolve_name(str_intern("Any"));
+    if (!any_sym || any_sym->kind != SYM_TYPE) {
+        printf("error: Any type not defined in builtins");
+        return 1;
+    }
+    leave_package(builtin_package);
+    type_any = any_sym->type;
+
     Package *main_package = import_package(package_name);
     if (!main_package) {
         printf("error: Failed to compile package '%s'\n", package_name);

@@ -511,6 +511,12 @@ void gen_typeid(Type *type) {
 }
 
 void gen_expr(Expr *expr) {
+    bool convert_to_any = is_implicit_any(expr);
+    if (convert_to_any) {
+        Type *type = get_resolved_type(expr);
+        genf("(Any){&(");
+        genf("(%s[]){", type_to_cdecl(type, "")); // l-value litteral
+    }
     switch (expr->kind) {
     case EXPR_PAREN:
         genf("(");
@@ -651,6 +657,12 @@ void gen_expr(Expr *expr) {
         break;
     default:
         assert(0);
+    }
+    if (convert_to_any) {
+        genf("}"); // end l-value literal
+        genf("), ");
+        gen_typeid(get_resolved_type(expr));
+        genf("}");
     }
 }
 

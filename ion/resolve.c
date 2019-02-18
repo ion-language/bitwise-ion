@@ -491,8 +491,11 @@ bool cast_operand(Operand *operand, Type *type) {
 }
 
 bool convert_operand(Operand *operand, Type *type) {
-    if (is_convertible(operand, type)) {
-        cast_operand(operand, type);
+    bool convertible = is_convertible(operand, type);
+    if (type == type_any || convertible) {
+        if (convertible) {
+            cast_operand(operand, type);
+        }
         operand->type = unqualify_type(operand->type);
         operand->is_lvalue = false;
         return true;
@@ -616,6 +619,16 @@ void set_resolved_expected_type(Expr *expr, Type *type) {
     if (expr && type) {
         map_put(&resolved_expected_type_map, expr, type);
     }
+}
+
+Map implicit_any_map;
+
+bool is_implicit_any(Expr *expr) {
+    return map_get(&implicit_any_map, expr) != NULL;
+}
+
+void set_implicit_any(Expr *expr) {
+    map_put(&implicit_any_map, expr, (void*)1);
 }
 
 Sym *resolve_name(const char *name);
@@ -787,6 +800,9 @@ Type *resolve_typed_init(SrcPos pos, Type *type, Expr *expr) {
         if (!convert_operand(&operand, expected_type)) {
             return NULL;
         }
+    }
+    if (is_implicit_any(expr)) {
+        return type_any;
     }
     set_resolved_expected_type(expr, operand.type);
     return operand.type;
@@ -2178,7 +2194,12 @@ Operand resolve_expected_expr(Expr *expr, Type *expected_type) {
         result = operand_null;
         break;
     }
-    set_resolved_type(expr, result.type);
+    if (expected_type && unqualify_type(expected_type) == type_any && unqualify_type(result.type) != type_any) {
+        set_implicit_any(expr);
+        set_resolved_type(expr, type_decay(result.type));
+    } else {
+        set_resolved_type(expr, result.type);
+    }
     return result;
 }
 

@@ -97,6 +97,7 @@ int next_typeid = 1;
 Type *type_uintptr;
 Type *type_usize;
 Type *type_ssize;
+Type *type_any;
 
 void complete_type(Type *type);
 
