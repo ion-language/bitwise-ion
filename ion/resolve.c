@@ -277,6 +277,9 @@ void put_type_name(char **buf, Type *type) {
             buf_printf(*buf, "[%zu]", type->num_elems);
             break;
         case TYPE_FUNC:
+            if (type->func.is_intrinsic) {
+                buf_printf(*buf, "@intrinsic ");
+            }
             buf_printf(*buf, "func(");
             for (size_t i = 0; i < type->func.num_params; i++) {
                 if (i != 0) {
@@ -412,6 +415,8 @@ bool is_convertible(Operand *operand, Type *dest) {
     Type *src = unqualify_type(operand->type);
     if (dest == src) {
         return true;
+    } else if (is_func_type(src) && src->func.is_intrinsic) {
+        return false;
     } else if (is_arithmetic_type(dest) && is_arithmetic_type(src)) {
         return true;
     } else if (is_ptr_like_type(dest) && is_null_ptr(*operand)) {
@@ -722,7 +727,7 @@ Type *resolve_typespec(Typespec *typespec) {
         if (is_array_type(ret)) {
             fatal_error(typespec->pos, "Function return type cannot be array");
         }
-        result = type_func(args, buf_len(args), ret, /*has_varargs*/false, /*varargs_type*/NULL);
+        result = type_func(/* is_intrinsic */false, args, buf_len(args), ret, /*has_varargs*/false, /*varargs_type*/NULL);
         break;
     }
     default:
@@ -819,7 +824,7 @@ Type *resolve_init(SrcPos pos, Typespec *typespec, Expr *expr) {
         if (expr) {
             type = resolve_typed_init(pos, declared_type, expr);
             if (!type) {
-                fatal_error(pos, "Invalid type in initialization. Expected %s", get_type_name(declared_type));
+                fatal_error(pos, "Invalid type in initialization. Expected %s", get_type_name(declared_type)); // NOTE(nicolas): wish we also returned the type of the operand, for a nicer error message.
             }
         }
     } else {
@@ -878,6 +883,16 @@ Type *resolve_decl_const(Decl *decl, Val *val) {
 
 Type *resolve_decl_func(Decl *decl) {
     assert(decl->kind == DECL_FUNC);
+    bool is_intrinsic = false;
+    for (size_t i = 0; i < decl->notes.num_notes; i++) {
+        Note *note = &decl->notes.notes[i];
+        if (note->name == str_intern("intrinsic")) {
+            if (note->num_args > 0) {
+                fatal_error(note->pos, "note does not take arguments");
+            }
+            is_intrinsic = true;
+        }
+    }
     Type **params = NULL;
     for (size_t i = 0; i < decl->func.num_params; i++) {
         Type *param = resolve_typespec(decl->func.params[i].type);
@@ -901,7 +916,7 @@ Type *resolve_decl_func(Decl *decl) {
     if (is_array_type(ret_type)) {
         fatal_error(decl->pos, "Function return type cannot be array");
     }
-    return type_func(params, buf_len(params), ret_type, decl->func.has_varargs, varargs_type);
+    return type_func(is_intrinsic, params, buf_len(params), ret_type, decl->func.has_varargs, varargs_type);
 }
 
 typedef struct StmtCtx {

@@ -998,6 +998,20 @@ func test_type_path() {
     t3: my_time_t = time(NULL);
 }
 
+@intrinsic
+func intrinsic_func(): int
+{
+    printf("called intrinsic func.\n");
+    return 0;
+}
+
+func test_intrinsic() {
+    intrinsic_func();
+    //a: func (): int = intrinsic_func; // should not work
+    a := intrinsic_func; // works because it keeps the intrinsic-ness
+    a();
+}
+
 func main(argc: int, argv: char**): int {
     if (argv == 0) {
         printf("argv is null\n");
@@ -1031,6 +1045,7 @@ func main(argc: int, argv: char**): int {
     test_push();
     test_reachable();
     test_type_path();
+    test_intrinsic();
     gc();
     C.getchar();
     subtest1.LIBC.getchar();

@@ -59,6 +59,7 @@ struct Type {
           size_t num_enum_items;
         } enumeration;
         struct {
+            bool is_intrinsic;
             Type **params;
             size_t num_params;
             bool has_varargs;
@@ -336,14 +337,14 @@ typedef struct CachedFuncType {
 
 Map cached_func_types;
 
-Type *type_func(Type **params, size_t num_params, Type *ret, bool has_varargs, Type *varargs_type) {
+Type *type_func(bool is_intrinsic, Type **params, size_t num_params, Type *ret, bool has_varargs, Type *varargs_type) {
     size_t params_size = num_params * sizeof(*params);
     uint64_t hash = hash_mix(hash_bytes(params, params_size), hash_ptr(ret));
     uint64_t key = hash ? hash : 1;
     CachedFuncType *cached = map_get_from_uint64(&cached_func_types, key);
     for (CachedFuncType *it = cached; it; it = it->next) {
         Type *type = it->type;
-        if (type->func.num_params == num_params && type->func.ret == ret && type->func.has_varargs == has_varargs && type->func.varargs_type == varargs_type) {
+        if (type->func.is_intrinsic == is_intrinsic && type->func.num_params == num_params && type->func.ret == ret && type->func.has_varargs == has_varargs && type->func.varargs_type == varargs_type) {
             if (memcmp(type->func.params, params, params_size) == 0) {
                 return type;
             }
@@ -352,6 +353,7 @@ Type *type_func(Type **params, size_t num_params, Type *ret, bool has_varargs, T
     Type *type = type_alloc(TYPE_FUNC);
     type->size = type_metrics[TYPE_PTR].size;
     type->align = type_metrics[TYPE_PTR].align;
+    type->func.is_intrinsic = is_intrinsic;
     type->func.params = memdup(params, params_size);
     type->func.num_params = num_params;
     type->func.has_varargs = has_varargs;
