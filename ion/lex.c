@@ -31,6 +31,7 @@ const char *always_name;
 const char *foreign_name;
 const char *complete_name;
 const char *assert_name;
+const char *intrinsic_name;
 const char *declare_note_name;
 const char *static_assert_name;
 
@@ -74,6 +75,7 @@ void init_keywords(void) {
     foreign_name = str_intern("foreign");
     complete_name = str_intern("complete");
     assert_name = str_intern("assert");
+    intrinsic_name = str_intern("intrinsic");
     declare_note_name = str_intern("declare_note");
     static_assert_name = str_intern("static_assert");
 

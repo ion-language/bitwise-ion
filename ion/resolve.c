@@ -47,6 +47,8 @@ enum {
     MAX_LOCAL_SYMS = 1024
 };
 
+Sym *va_arg_sym;
+
 Package *current_package;
 Package *builtin_package;
 Map package_map;
@@ -89,6 +91,14 @@ Sym **reachable_syms;
 Sym **sorted_syms;
 Sym local_syms[MAX_LOCAL_SYMS];
 Sym *local_syms_end = local_syms;
+
+bool is_intrinsic(Sym *sym) {
+    if (!sym || sym->kind != SYM_FUNC) {
+        return false;
+    }
+    assert(sym->type);
+    return sym->type->func.is_intrinsic;
+}
 
 bool is_local_sym(Sym *sym) {
     return local_syms <= sym && sym < local_syms_end;
@@ -289,7 +299,7 @@ void put_type_name(char **buf, Type *type) {
             }
             if (type->func.has_varargs) {
                 buf_printf(*buf, "...");
-                if (type->func.varargs_type) {
+                if (type->func.varargs_type != type_void) {
                     put_type_name(buf, type->func.varargs_type);
                 }
             }
@@ -715,9 +725,6 @@ Type *resolve_typespec(Typespec *typespec) {
         Type **args = NULL;
         for (size_t i = 0; i < typespec->func.num_args; i++) {
             Type *arg = resolve_typespec(typespec->func.args[i]);
-            if (arg == type_void) {
-                fatal_error(typespec->pos, "Function parameter type cannot be void");
-            }
             buf_push(args, arg);
         }
         Type *ret = type_void;
@@ -883,26 +890,18 @@ Type *resolve_decl_const(Decl *decl, Val *val) {
 
 Type *resolve_decl_func(Decl *decl) {
     assert(decl->kind == DECL_FUNC);
-    bool is_intrinsic = false;
-    for (size_t i = 0; i < decl->notes.num_notes; i++) {
-        Note *note = &decl->notes.notes[i];
-        if (note->name == str_intern("intrinsic")) {
-            if (note->num_args > 0) {
-                fatal_error(note->pos, "note does not take arguments");
-            }
-            is_intrinsic = true;
-        }
+    Note *intrinsic_note = get_decl_note(decl, intrinsic_name);
+    bool is_intrinsic = intrinsic_note;
+    if (intrinsic_note && intrinsic_note->num_args > 0) {
+        fatal_error(intrinsic_note->pos, "intrinsic note does not take arguments");
     }
     Type **params = NULL;
     for (size_t i = 0; i < decl->func.num_params; i++) {
         Type *param = resolve_typespec(decl->func.params[i].type);
         complete_type(param);
-        if (param == type_void) {
-            fatal_error(decl->pos, "Function parameter type cannot be void");
-        }
         buf_push(params, param);
     }
-    Type *varargs_type = NULL;
+    Type *varargs_type = type_void;
     if (decl->func.varargs_type) {
         assert(decl->func.has_varargs);
         varargs_type = resolve_typespec(decl->func.varargs_type);
@@ -1882,7 +1881,8 @@ Operand resolve_expr_call(Expr *expr) {
         bool is_variadic = i >= num_params;
         Type *param_type = is_variadic ? func.type->func.varargs_type : func.type->func.params[i];
         Operand arg = resolve_expected_expr_rvalue(expr->call.args[i], param_type);
-        if (param_type == NULL) {
+        if (param_type == type_void) {
+            // void arguments are sinks for any kind of value.
             continue;
         }
         if (is_array_type(param_type)) {

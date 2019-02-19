@@ -509,6 +509,23 @@ bool is_excluded_typeinfo(Type *type) {
     }
 }
 
+void gen_intrinsic(Expr *expr, Sym* sym) {
+    if (sym == va_arg_sym) {
+        Type *result_type = get_resolved_type(expr->call.args[1]);
+        if (!is_ptr_type(result_type)) {
+            fatal_error(expr->call.args[1]->pos, "Argument 2 to va_arg must be a pointer type");
+        }
+        genf("(*(");
+        gen_expr(expr->call.args[1]);
+        genf(") = va_arg(*(");
+        gen_expr(expr->call.args[0]);
+        genf("), %s", type_to_cdecl(result_type->base, ""));
+        genf("))");
+    } else {
+        fatal_error(expr->pos, "Call to unknown intrinsic %s", expr->name);
+    }
+}
+
 void gen_typeid(Type *type) {
     if (type->size == 0 || is_excluded_typeinfo(type)) {
         genf("TYPEID0(%d, %s)", type->typeid, typeid_kind_name(type));
@@ -568,19 +585,23 @@ void gen_expr(Expr *expr) {
         break;
     case EXPR_CALL: {
         Sym *sym = get_resolved_sym(expr->call.expr);
-        if (sym && sym->kind == SYM_TYPE) {
-            genf("(%s)", get_gen_name(sym));
+        if (is_intrinsic(sym)) {
+            gen_intrinsic(expr, sym);
         } else {
-            gen_expr(expr->call.expr);
-        }
-        genf("(");
-        for (size_t i = 0; i < expr->call.num_args; i++) {
-            if (i != 0) {
-                genf(", ");
+            if (sym && sym->kind == SYM_TYPE) {
+                genf("(%s)", get_gen_name(sym));
+            } else {
+                gen_expr(expr->call.expr);
             }
-            gen_expr(expr->call.args[i]);
+            genf("(");
+            for (size_t i = 0; i < expr->call.num_args; i++) {
+                if (i != 0) {
+                    genf(", ");
+                }
+                gen_expr(expr->call.args[i]);
+            }
+            genf(")");
         }
-        genf(")");
         break;
     }
     case EXPR_INDEX:
@@ -957,6 +978,9 @@ void gen_decl(Sym *sym) {
 
 void gen_sorted_decls(void) {
     for (size_t i = 0; i < buf_len(sorted_syms); i++) {
+        if (is_intrinsic(sorted_syms[i])) {
+            continue;
+        }
         if (sorted_syms[i]->reachable == REACHABLE_NATURAL) {
             gen_decl(sorted_syms[i]);
         }

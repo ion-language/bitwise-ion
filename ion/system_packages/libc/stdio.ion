@@ -13,9 +13,6 @@ var stdout: FILE*;
 var stderr: FILE*;
 
 @foreign
-typedef va_list = char*;
-
-@foreign
 struct fpos_t;
 
 @foreign const EOF      = -1;

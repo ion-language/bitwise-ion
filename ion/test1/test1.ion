@@ -506,10 +506,16 @@ func test_cast() {
 
 func print_any(any: Any) {
     switch (any.type) {
+    case typeof(char):
+        printf("%d", *(:char const*)any.ptr);
     case typeof(int):
         printf("%d", *(:int const*)any.ptr);
+    case typeof(llong):
+        printf("%lld", *(:llong const*)any.ptr);
     case typeof(float):
         printf("%f", *(:float const *)any.ptr);
+    case typeof(:char*):
+        printf("%s", *(:char**)any.ptr);
     default:
         typeinfo := get_typeinfo(any.type);
         if (typeinfo.kind == TYPE_ENUM) {
@@ -531,6 +537,27 @@ func print_any(any: Any) {
     }
     printf(": ");
     print_type(any.type);
+}
+
+func printf_any(fmt: char const*, ...Any) {
+    args: va_list;
+    va_start(&args, &fmt);
+    start := fmt;
+    while (*fmt) {
+        while (*fmt && *fmt != '%') {
+            fmt++;
+        }
+        if (*fmt == '%') {
+            printf("%.*s", int(fmt - start), start);
+            fmt++;
+            x: Any;
+            va_arg(&args, &x);
+            print_any(x);
+            start = fmt;
+        }
+    }
+    printf("%.*s", int(fmt - start), start);
+    va_end(&args);
 }
 
 func int64_from_integer(any: Any) : int64 {
@@ -668,6 +695,7 @@ func test_typeinfo() {
 
     println_any(foo);
     println_any(bar);
+    printf_any("42='%' Hello='%' 3.14='%'\n", 42, "Hello", 3.14);
 
     println_type(typeof(int));
     println_type(typeof(:int const*));
@@ -726,17 +754,15 @@ func test_va_list(fmt: char const*, ...) {
     va_copy(&args, &init_args);
     va_end(&init_args);
     c: char;
-    va_arg(&args, {&c, typeof(c)});
+    va_arg(&args, &c);
     i: int;
-    va_arg(&args, {&i, typeof(i)});
+    va_arg(&args, &i);
     ll: llong;
-    va_arg(&args, {&ll, typeof(ll)});
+    va_arg(&args, &ll);
     printf("c=%d i=%d ll=%lld\n", c, i, ll);
     va_end(&args);
 }
 
-// NOTE(nicolas): this doesn't work yet
-/*
 func test_typed_va_list_any(fmt: char const*, ...Any) {
     init_args: va_list;
     va_start(&init_args, &fmt);
@@ -744,11 +770,11 @@ func test_typed_va_list_any(fmt: char const*, ...Any) {
     va_copy(&args, &init_args);
     va_end(&init_args);
     x: Any;
-    va_arg(&args, {&x, typeof(x)});
+    va_arg(&args, &x);
     y: Any;
-    va_arg(&args, {&y, typeof(y)});
+    va_arg(&args, &y);
     z: Any;
-    va_arg(&args, {&z, typeof(z)});
+    va_arg(&args, &z);
     print_any(x);
     printf(", ");
     print_any(y);
@@ -757,7 +783,6 @@ func test_typed_va_list_any(fmt: char const*, ...Any) {
     printf("\n");
     va_end(&args);
 }
-*/
 
 func test_typed_va_list_int(fmt: char const*, ...int) {
     init_args: va_list;
@@ -768,9 +793,9 @@ func test_typed_va_list_int(fmt: char const*, ...int) {
     i1: int;
     i2: int;
     i3: int;
-    va_arg(&args, {&i1, typeof(i1)});
-    va_arg(&args, {&i2, typeof(i2)});
-    va_arg(&args, {&i3, typeof(i3)});
+    va_arg(&args, &i1);
+    va_arg(&args, &i2);
+    va_arg(&args, &i3);
     printf("0=%d 1=%d 2=%d\n", i1, i2, i3);
     va_end(&args);
 }
@@ -998,18 +1023,9 @@ func test_type_path() {
     t3: my_time_t = time(NULL);
 }
 
-@intrinsic
-func intrinsic_func(): int
-{
-    printf("called intrinsic func.\n");
-    return 0;
-}
-
 func test_intrinsic() {
-    intrinsic_func();
     //a: func (): int = intrinsic_func; // should not work
-    a := intrinsic_func; // works because it keeps the intrinsic-ness
-    a();
+    // a := va_arg; // TODO(nicolas): should be disallowed
 }
 
 func main(argc: int, argv: char**): int {
@@ -1019,7 +1035,7 @@ func main(argc: int, argv: char**): int {
     test_const_ptr_deref();
     test_limits();
     test_va_list("whatever", char(123), int(123123), llong(123123123123));
-// test_typed_va_list_any("whatever", char(123), int(123123), llong(123123123123)); // NOTE(nicolas): this doesn't work yet
+    test_typed_va_list_any("whatever", char(123), int(123123), llong(123123123123));
     test_typed_va_list_int("whatever", int(123123), char(123), uint(123));
     test_os_arch();
     test_packages();

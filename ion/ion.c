@@ -110,6 +110,11 @@ int ion_main(int argc, const char **argv) {
         printf("error: Any type not defined in builtins");
         return 1;
     }
+    va_arg_sym = resolve_name(str_intern("va_arg"));
+    if (!va_arg_sym || va_arg_sym->kind != SYM_FUNC) {
+        printf("error: va_arg intrinsic not defined in builtins");
+        return 1;
+    }
     leave_package(builtin_package);
     type_any = any_sym->type;
 
