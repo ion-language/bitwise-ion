@@ -57,8 +57,12 @@ const char *gen_preamble_str =
     "static void va_arg_ptr(va_list *args, struct Any any);\n"
     ;
 
+#define STRINGIFY_INNER(x__) #x__
+#define STRINGIFY(x__) STRINGIFY_INNER(x__)
+
 const char *gen_postamble_str =
     "\n"
+    "#line " STRINGIFY(__LINE__) " " STRINGIFY(__FILE__) "\n"
     "static void va_arg_ptr(va_list *args, Any any) {\n"
     "    switch (typeid_kind(any.type)) {\n"
     "    case TYPE_BOOL:\n"
@@ -117,6 +121,9 @@ const char *gen_postamble_str =
     "#pragma GCC diagnostic pop\n"
     "#endif\n"
     ;
+
+#undef STRINGIFY_INNER
+#undef STRINGIFY
 
 void genln(void) {
     genf("\n%.*s", gen_indent * 4, "                                                                  ");
