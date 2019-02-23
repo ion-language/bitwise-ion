@@ -53,6 +53,7 @@ Package *current_package;
 Package *builtin_package;
 Map package_map;
 Package **package_list;
+Map decl_note_names;
 
 enum {
     REACHABLE_NONE,
@@ -89,6 +90,7 @@ void leave_package(Package *old_package) {
 
 Sym **reachable_syms;
 Sym **sorted_syms;
+Map syms_with_package_directives;
 Sym local_syms[MAX_LOCAL_SYMS];
 Sym *local_syms_end = local_syms;
 
@@ -1232,12 +1234,31 @@ void resolve_func_body(Sym *sym) {
     }
     Type *ret_type = resolve_typespec(decl->func.ret_type);
     assert(!is_array_type(ret_type));
-    bool returns = resolve_stmt_block(decl->func.block, ret_type, (StmtCtx){0});
-    resolve_labels();
-    sym_leave(scope);
-    if (ret_type != type_void && !returns) {
-        fatal_error(decl->pos, "Not all control paths return values");
+    if (is_decl_foreign(decl)) {
+        // body of foreign declarations is resolved for its side effects,
+        // and does not correspond to the function's code.
+        Sym *scope = sym_enter();
+        StmtList block = decl->func.block;
+        for (size_t i = 0; i < block.num_stmts; i++) {
+            Stmt* stmt = block.stmts[i];
+            if (stmt->kind == STMT_NOTE) {
+                // allow first level directives
+                if (map_get(&decl_note_names, stmt->note.name)) {
+                    map_put(&syms_with_package_directives, sym, current_package);
+                }
+            } else {
+                resolve_stmt(stmt, ret_type, (StmtCtx){0});
+            }
+        }
+        sym_leave(scope);
+    } else {
+        bool returns = resolve_stmt_block(decl->func.block, ret_type, (StmtCtx){0});
+        resolve_labels();
+        if (ret_type != type_void && !returns) {
+            fatal_error(decl->pos, "Not all control paths return values");
+        }
     }
+    sym_leave(scope);
     leave_package(old_package);
 }
 
@@ -1293,7 +1314,7 @@ void resolve_sym(Sym *sym) {
 
 void finalize_sym(Sym *sym) {
     assert(sym->state == SYM_RESOLVED);
-    if (sym->decl && !is_decl_foreign(sym->decl) && !sym->decl->is_incomplete) {
+    if (sym->decl && !sym->decl->is_incomplete) {
         if (sym->kind == SYM_TYPE) {
             complete_type(sym->type);
             // Enumeration values are needed for the typeinfo, and
@@ -2243,8 +2264,6 @@ Operand resolve_const_expr(Expr *expr) {
     }
     return operand;
 }
-
-Map decl_note_names;
 
 void init_builtin_syms() {
     assert(current_package);

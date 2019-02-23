@@ -1070,6 +1070,38 @@ static void put_include_path(char path[MAX_PATH], Package *package, const char *
 char *gen_preamble_buf;
 char *gen_postamble_buf;
 
+static void preprocess_package_directive(Package* package, Note* note, SrcPos pos) {
+    const char *header_name = str_intern("header");
+    const char *source_name = str_intern("source");
+    const char *preamble_name = str_intern("preamble");
+    const char *postamble_name = str_intern("postamble");
+    if (note->name == foreign_name) {
+        for (size_t k = 0; k < note->num_args; k++) {
+            NoteArg arg = note->args[k];
+            Expr *expr = note->args[k].expr;
+            if (expr->kind != EXPR_STR) {
+                fatal_error(pos, "#foreign argument must be a string");
+            }
+            const char *str = expr->str_lit.val;
+            if (arg.name == header_name) {
+                char path[MAX_PATH];
+                put_include_path(path, package, str);
+                add_foreign_header(path);
+            } else if (arg.name == source_name) {
+                char path[MAX_PATH];
+                put_include_path(path, package, str);
+                add_foreign_source(path);
+            } else if (arg.name == preamble_name) {
+                buf_printf(gen_preamble_buf, "%s\n", str);
+            } else if (arg.name == postamble_name) {
+                buf_printf(gen_postamble_buf, "%s\n", str);
+            } else {
+                fatal_error(pos, "Unknown #foreign named argument '%s'", arg.name);
+            }
+        }
+    }
+}
+
 static void preprocess_package(Package *package) {
     if (!package->external_name) {
         char *external_name = NULL;
@@ -1079,47 +1111,37 @@ static void preprocess_package(Package *package) {
         buf_printf(external_name, "_");
         package->external_name = str_intern(external_name);
     }
-    const char *header_name = str_intern("header");
-    const char *source_name = str_intern("source");
-    const char *preamble_name = str_intern("preamble");
-    const char *postamble_name = str_intern("postamble");
     for (size_t i = 0; i < package->num_decls; i++) {
         Decl *decl = package->decls[i];
         if (decl->kind != DECL_NOTE) {
             continue;
         }
-        Note note = decl->note;
-        if (note.name == foreign_name) {
-            for (size_t k = 0; k < note.num_args; k++) {
-                NoteArg arg = note.args[k];
-                Expr *expr = note.args[k].expr;
-                if (expr->kind != EXPR_STR) {
-                    fatal_error(decl->pos, "#foreign argument must be a string");
-                }
-                const char *str = expr->str_lit.val;
-                if (arg.name == header_name) {
-                    char path[MAX_PATH];
-                    put_include_path(path, package, str);
-                    add_foreign_header(path);
-                } else if (arg.name == source_name) {
-                    char path[MAX_PATH];
-                    put_include_path(path, package, str);
-                    add_foreign_source(path);
-                } else if (arg.name == preamble_name) {
-                    buf_printf(gen_preamble_buf, "%s\n", str);
-                } else if (arg.name == postamble_name) {
-                    buf_printf(gen_postamble_buf, "%s\n", str);
-                } else {
-                    fatal_error(decl->pos, "Unknown #foreign named argument '%s'", arg.name);
-                }
-            }
-        }
+        preprocess_package_directive(package, &decl->note, decl->pos);
     }
 }
 
 void preprocess_packages(void) {
     for (size_t i = 0; i < buf_len(package_list); i++) {
         preprocess_package(package_list[i]);
+    }
+}
+
+void preprocess_sorted_decls(void) {
+    // Preprocess in-declaration package directives:
+    for (size_t i = 0; i < buf_len(sorted_syms); i++) {
+        Sym* sym = sorted_syms[i];
+        Package *package = map_get(&syms_with_package_directives, sym);
+        if (package && sym->reachable == REACHABLE_NATURAL) {
+            assert(sym->decl->kind == DECL_FUNC);
+            StmtList block = sym->decl->func.block;
+            for (size_t i = 0; i < block.num_stmts; i++) {
+                Stmt* stmt = block.stmts[i];
+                if (stmt->kind != STMT_NOTE) {
+                    continue;
+                }
+                preprocess_package_directive(package, &stmt->note, stmt->pos);
+            }
+        }
     }
 }
 
@@ -1288,6 +1310,7 @@ void gen_postamble(void) {
 
 void gen_all(void) {
     preprocess_packages();
+    preprocess_sorted_decls();
     gen_buf = NULL;
     gen_preamble();
     gen_foreign_headers();

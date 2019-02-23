@@ -1028,6 +1028,19 @@ func test_intrinsic() {
     // a := va_arg; // TODO(nicolas): should be disallowed
 }
 
+@foreign("foreign_macro")
+func foreign_macro(a: void*): int {
+    // body is here just to emit foreign code
+    #foreign(preamble="#define foreign_macro(a__) (sizeof *(a__))");
+}
+
+func test_foreign_with_inline_code() {
+    a: char;
+    #assert(foreign_macro(&a) == 1);
+    b: int32;
+    #assert(foreign_macro(&b) == 4);
+}
+
 func main(argc: int, argv: char**): int {
     if (argv == 0) {
         printf("argv is null\n");
@@ -1062,6 +1075,7 @@ func main(argc: int, argv: char**): int {
     test_reachable();
     test_type_path();
     test_intrinsic();
+    test_foreign_with_inline_code();
     gc();
     C.getchar();
     subtest1.LIBC.getchar();
