@@ -1,0 +1,93 @@
+import libc
+
+func buf_cap(opaque_buf : void const*) : usize
+{
+  return array_capacity(buf_hdr(opaque_buf));
+}
+
+func buf_size(opaque_buf : void const*) : usize
+{
+  return array_size(buf_hdr(opaque_buf));
+}
+
+func buf_len(opaque_buf : void const*) : usize
+{
+  return array_length(buf_hdr(opaque_buf));
+}
+
+func buf_push(opaque_buf_ptr : void*, elem : void*, elem_size : usize)
+{
+  buf_ptr := (:void**)opaque_buf_ptr;
+  *buf_ptr = buf_fit(*buf_ptr, elem_size, 1);
+  buf__add_n(*buf_ptr, elem, elem_size, 1);
+}
+
+func buf_alloc_at(opaque_buf_ptr : void*, elem_size : usize, elem_idx : usize) : void*
+{
+  buf_ptr := (:void**)opaque_buf_ptr;
+  hdr := buf_hdr_mutable(*buf_ptr);
+  if (elem_idx >= array_length(hdr)) {
+    hdr = array_alloc(hdr, 1+elem_idx, elem_size);
+    *buf_ptr = &hdr.bytes[0];
+  }
+  return &hdr.bytes[elem_size * elem_idx];
+}
+
+func buf_free(opaque_buf : void*)
+{
+  array_reset(buf_hdr_mutable(opaque_buf));
+}
+
+func buf_fit(opaque_buf : void*, elem_size : usize, num_added : usize) : void*
+{
+  hdr := buf_hdr_mutable(opaque_buf);
+  old_size := array_size(hdr);
+  hdr = array_alloc(hdr, num_added + array_length(hdr), elem_size);
+  hdr.size = old_size;
+  return &hdr.bytes[0];
+}
+
+func buf_copy(opaque_buf : void const*, elem_size : usize) : void*
+{
+  n := buf_size(opaque_buf)/elem_size;
+  result := buf_fit(NULL, elem_size, n);
+  buf__add_n(result, (:uint8 const*)opaque_buf, elem_size, n);
+  return result;
+}
+
+func buf_cat_range(opaque_buf_ptr : void*, elem_size : usize, first : void const*, last : void const*)
+{
+  n := ((:uint8 const*)last - (:uint8 const*)first)/elem_size;
+  buf_ptr := (:void**)opaque_buf_ptr;
+  *buf_ptr = buf_fit(*buf_ptr, elem_size, n);
+  buf__add_n(*buf_ptr, first, elem_size, n);
+}
+
+func buf_cat_n(opaque_buf_ptr : void*, elem_size : usize, first : void const*, num_added : usize)
+{
+  buf_cat_range(opaque_buf_ptr, elem_size, first, ((:uint8 const*)first) + elem_size*num_added);
+}
+
+func buf__add_n(opaque_buf : void*, data : void const*, elem_size : usize, num_added : usize)
+{
+  hdr := buf_hdr_mutable(opaque_buf);
+  data_size := mul_with_overflow_check_usize(num_added, elem_size);
+  available_size := hdr.capacity - hdr.size;
+  #assert(data_size <= available_size);
+  libc.memcpy(&hdr.bytes[hdr.size], data, data_size);
+  hdr.size += elem_size;
+}
+
+func buf_hdr(opaque_buf : void const*) : Array const*
+{
+  if (!opaque_buf) { return NULL; }
+  addr := ((:uint8*) opaque_buf) - offsetof(Array, bytes);
+  hdr := (:Array const*) addr;
+  array__check_magic(hdr);
+  return hdr;
+}
+
+func buf_hdr_mutable(opaque_buf : void*) : Array*
+{
+  return (:Array*)buf_hdr(opaque_buf);
+}

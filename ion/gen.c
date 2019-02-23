@@ -510,17 +510,36 @@ bool is_excluded_typeinfo(Type *type) {
 }
 
 void gen_intrinsic(Expr *expr, Sym* sym) {
-    if (sym == va_arg_sym) {
+    if (sym->name == str_intern("va_arg")) {
         Type *result_type = get_resolved_type(expr->call.args[1]);
         if (!is_ptr_type(result_type)) {
             fatal_error(expr->call.args[1]->pos, "Argument 2 to va_arg must be a pointer type");
         }
         genf("(*(");
         gen_expr(expr->call.args[1]);
-        genf(") = va_arg(*(");
+        genf(") = %s(*(", sym->name);
         gen_expr(expr->call.args[0]);
         genf("), %s", type_to_cdecl(result_type->base, ""));
         genf("))");
+    } else if (sym->name == str_intern("apush")) {
+        // func(a: T**, x: T) -> func(T, a, x)
+        Type *a_type = get_resolved_type(expr->call.args[0]);
+        Type *x_type = get_resolved_type(expr->call.args[1]);
+        Type *array_elem_type = NULL;
+        // TODO(nicolas): custom resolver pass to convert operands to array_elem_type
+        if (a_type->kind == TYPE_PTR && a_type->base->kind == TYPE_PTR) {
+            array_elem_type = a_type->base->base;
+        }
+        if (array_elem_type != x_type) {
+            fatal_error(expr->call.args[0]->pos, "Expected argument 1 of ptr to ptr of %s", get_type_name(x_type));
+        }
+        genf("%s(", sym->name);
+        genf("%s", type_to_cdecl(x_type, ""));
+        genf(", ");
+        gen_expr(expr->call.args[0]);
+        genf(", ");
+        gen_expr(expr->call.args[1]);
+        genf(")");
     } else {
         fatal_error(expr->pos, "Call to unknown intrinsic %s", expr->name);
     }

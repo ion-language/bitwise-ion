@@ -1,3 +1,4 @@
+import std
 import .subtest1 {subtest1_func1 = func1}
 import C = libc {gc = getchar, ...}
 
@@ -1041,6 +1042,14 @@ func test_foreign_with_inline_code() {
     #assert(foreign_macro(&b) == 4);
 }
 
+func test_std_array()
+{
+    a: float*;
+    std.apush(&a, 42.0);
+    std.apush(&a, 24.0);
+    // std.apush(&a, 41); // TODO(nicolas): highlights wonkyness of too tight type-checking
+}
+
 func main(argc: int, argv: char**): int {
     if (argv == 0) {
         printf("argv is null\n");
@@ -1076,6 +1085,7 @@ func main(argc: int, argv: char**): int {
     test_type_path();
     test_intrinsic();
     test_foreign_with_inline_code();
+    test_std_array();
     gc();
     C.getchar();
     subtest1.LIBC.getchar();

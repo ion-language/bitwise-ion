@@ -1,0 +1,139 @@
+import libc
+
+struct Array
+{
+  magic     : int32;
+  capacity  : int32;
+  size      : int32;
+  elem_size : int32;
+  bytes     : uint8[1];
+}
+
+const ArrayMagic = 0xcfce_6cd4;
+
+func array__free(array : Array*)
+{
+    if (!array) { return; }
+    *array = {};
+    libc.free(array);
+}
+
+func array_reset(array : Array*) : Array*
+{
+    array__check_magic(array);
+    array__free(array);
+    return NULL;
+}
+
+// allocate enough space for num_elem * elem_size, preserving the existing bytes
+func array_alloc(array : Array*, num_elem : usize, elem_size : usize) : Array*
+{
+    array__check_magic(array);
+    needed_size := mul_with_overflow_check_usize(num_elem, elem_size);
+    needed_capacity := needed_size;
+    if (!array) {
+       array = libc.calloc(1, sizeof(Array) + needed_capacity);
+        *array = {
+            capacity = needed_capacity,
+            magic = ArrayMagic,
+            elem_size = elem_size,
+        }; 
+        libc.memset(&array.bytes[0], 0, array.capacity);
+    } else if (array.capacity < needed_capacity) {
+        #assert(elem_size == array.elem_size);
+        old_capacity := array.capacity;
+        next_capacity := 1 + old_capacity * 2;
+        new_capacity := needed_capacity>next_capacity? needed_capacity:next_capacity;
+        array.magic = 1; 
+        array = libc.realloc(array, sizeof(Array) + new_capacity);
+        libc.memset(&array.bytes[old_capacity], 0, new_capacity - old_capacity);
+        array.capacity = new_capacity;
+        array.magic = ArrayMagic;
+    }
+    if (needed_size > array.size) {
+        array.size = needed_size;
+        #assert(array.size <= array.capacity);
+    }
+    return array;
+}
+
+func array_capacity(array : Array const*) : usize
+{
+    if (!array) { return 0; }
+    array__check_magic(array);
+    return array.capacity;
+}
+
+func array_size(array : Array const*) : usize
+{
+    if (!array) { return 0; }
+    array__check_magic(array);
+    return array.size;
+}
+
+func array_elem_size(array : Array const*) : usize
+{
+    if (!array) { return 0; }
+    array__check_magic(array);
+    return array.elem_size;
+}
+
+// element count according to the array element size
+func array_length(array : Array const*) : usize
+{
+    if (!array) { return 0; }
+    array__check_magic(array);
+    return array.size/array.elem_size;
+}
+
+func test_array()
+{
+    {
+        array : Array*;
+        #assert(array_length(array) == 0);
+        array = array_alloc(array, 0, 2);
+        #assert(array);
+        #assert(array_length(array) == 0);
+	array = array_reset(array);
+    }
+    {
+        array : Array*;
+        array = array_alloc(array, 8, 2);
+        #assert(array.size == 16);
+	for (i:=0; i<array.size; i++) {
+	  #assert(array.bytes[i] == 0);
+	}
+        #assert(array_length(array) == 8);
+        for (i:=0; i<array_length(array); i++) {
+            array.bytes[2*i] = 'a'+i;
+            array.bytes[2*i+1] = 'A'+i;
+        }
+        reference := "aAbBcCdDeEfFgGhH";
+        #assert(libc.memcmp(&array.bytes[0], &reference[0], 16) == 0);
+        array = array_reset(array);
+        #assert(array_length(array) == 0);
+    }
+    {
+        array : Array*;
+        array = array_alloc(array, 11, 2);
+        array = array_alloc(array, 11+1, 2);
+        old_array := array;
+        array = array_alloc(array, 11+11-1, 2);
+        #assert(old_array == array);
+    }
+}
+
+func array__check_magic(array : Array const*)
+{
+    #assert(!array || array.magic == ArrayMagic);
+}
+
+
+const USIZE_MUL_MAX = usize(1)<<(sizeof(usize)*8/2);
+
+func mul_with_overflow_check_usize(a : usize, b : usize) : usize
+{
+    would_overflow := (a >= USIZE_MUL_MAX || b >= USIZE_MUL_MAX) && a > 0 && USIZE_MAX/a > b;
+    #assert(!would_overflow);
+    return a * b;
+}

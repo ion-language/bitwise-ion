@@ -1,0 +1,7 @@
+
+// push x onto array a
+@intrinsic @foreign
+func apush(a: void*, x: void) {
+    buf_push;    
+    #foreign(preamble = "#define apush(t, a, x) std_buf_push(a, (t[]){x}, (sizeof (t)))");
+}

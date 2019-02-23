@@ -47,10 +47,9 @@ enum {
     MAX_LOCAL_SYMS = 1024
 };
 
-Sym *va_arg_sym;
-
 Package *current_package;
 Package *builtin_package;
+Package *std_package;
 Map package_map;
 Package **package_list;
 Map decl_note_names;
@@ -667,6 +666,14 @@ Operand resolve_expected_expr_rvalue(Expr *expr, Type *expected_type) {
     return operand_decay(resolve_expected_expr(expr, expected_type));
 }
 
+Sym *resolve_intrinsic_symbol(const char* name) {
+    Sym *sym = resolve_name(str_intern(name));
+    if (!sym || sym->kind != SYM_FUNC) {
+        return sym;
+    }
+    return NULL;
+}
+
 Type *resolve_typespec(Typespec *typespec) {
     if (!typespec) {
         return type_void;
@@ -901,7 +908,7 @@ Type *resolve_decl_func(Decl *decl) {
     for (size_t i = 0; i < decl->func.num_params; i++) {
         Type *param = resolve_typespec(decl->func.params[i].type);
         complete_type(param);
-        if (param == type_void) {
+        if (!is_intrinsic && param == type_void) {
             fatal_error(decl->pos, "Function parameter type cannot be void");
         }
         buf_push(params, param);
@@ -1901,11 +1908,12 @@ Operand resolve_expr_call(Expr *expr) {
     if (expr->call.num_args > num_params && !func.type->func.has_varargs) {
         fatal_error(expr->pos, "Function call with too many arguments");
     }
+    bool is_intrinsic = func.type->func.is_intrinsic;
     for (size_t i = 0; i < expr->call.num_args; i++) {
-        bool is_variadic = i >= num_params;
-        Type *param_type = is_variadic ? func.type->func.varargs_type : func.type->func.params[i];
+        bool is_variadic_param = i >= num_params;
+        Type *param_type = is_variadic_param ? func.type->func.varargs_type : func.type->func.params[i];
         Operand arg = resolve_expected_expr_rvalue(expr->call.args[i], param_type);
-        if (param_type == type_void) {
+        if ((is_intrinsic || is_variadic_param) && param_type == type_void) {
             // void arguments are sinks for any kind of value.
             continue;
         }
@@ -1913,7 +1921,11 @@ Operand resolve_expr_call(Expr *expr) {
             param_type = type_ptr(param_type->base);
         }
         if (!convert_operand(&arg, param_type)) {
-            fatal_error(expr->call.args[i]->pos, "Invalid type in %sfunction call argument. Expected %s, got %s", is_variadic? "variadic " : "", get_type_name(param_type), get_type_name(arg.type));
+            if (is_variadic_param) {
+                fatal_error(expr->call.args[i]->pos, "Invalid type in variadic function call argument. Expected %s, got %s", get_type_name(param_type), get_type_name(arg.type));
+            } else {
+                fatal_error(expr->call.args[i]->pos, "Invalid type in function call argument. Expected %s, got %s", get_type_name(param_type), get_type_name(arg.type));
+            }
         }
     }
     return operand_rvalue(func.type->func.ret);

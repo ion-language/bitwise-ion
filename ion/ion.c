@@ -110,13 +110,33 @@ int ion_main(int argc, const char **argv) {
         printf("error: Any type not defined in builtins");
         return 1;
     }
-    va_arg_sym = resolve_name(str_intern("va_arg"));
-    if (!va_arg_sym || va_arg_sym->kind != SYM_FUNC) {
+    type_any = any_sym->type;
+    if (resolve_intrinsic_symbol("va_arg")) {
         printf("error: va_arg intrinsic not defined in builtins");
         return 1;
     }
     leave_package(builtin_package);
-    type_any = any_sym->type;
+
+    // TODO(nicolas): probably warrants its own cli flag to disable import
+    std_package = import_package("std");
+    if (!std_package) {
+        printf("error: failed to compile package 'std'.\n");
+        return 1;
+    }
+    enter_package(std_package);
+    {
+        const char* intrinsics[] = {
+            "apush",
+        };
+        size_t num_intrinsics = sizeof intrinsics / sizeof intrinsics[0];
+        for (size_t i = 0; i < num_intrinsics; i++) {
+            if (resolve_intrinsic_symbol(intrinsics[i])) {
+                printf("error: %s intrinsic not defined in %s", intrinsics[i], current_package->external_name);
+                return 1;
+            }
+        }
+    }
+    leave_package(std_package);
 
     Package *main_package = import_package(package_name);
     if (!main_package) {
