@@ -899,6 +899,9 @@ Type *resolve_decl_func(Decl *decl) {
     for (size_t i = 0; i < decl->func.num_params; i++) {
         Type *param = resolve_typespec(decl->func.params[i].type);
         complete_type(param);
+        if (param == type_void) {
+            fatal_error(decl->pos, "Function parameter type cannot be void");
+        }
         buf_push(params, param);
     }
     Type *varargs_type = type_void;
