@@ -522,19 +522,13 @@ void gen_intrinsic(Expr *expr, Sym* sym) {
         genf("), %s", type_to_cdecl(result_type->base, ""));
         genf("))");
     } else if (sym->name == str_intern("apush")) {
-        // func(a: T**, x: T) -> func(T, a, x)
+        // func(a: T**, x: U) -> func(T, a, (:T)x)
         Type *a_type = get_resolved_type(expr->call.args[0]);
+        assert(a_type->kind == TYPE_PTR && a_type->base->kind == TYPE_PTR);
+        Type *elem_type = a_type->base->base;
         Type *x_type = get_resolved_type(expr->call.args[1]);
-        Type *array_elem_type = NULL;
-        // TODO(nicolas): custom resolver pass to convert operands to array_elem_type
-        if (a_type->kind == TYPE_PTR && a_type->base->kind == TYPE_PTR) {
-            array_elem_type = a_type->base->base;
-        }
-        if (array_elem_type != x_type) {
-            fatal_error(expr->call.args[0]->pos, "Expected argument 1 of ptr to ptr of %s", get_type_name(x_type));
-        }
         genf("%s(", sym->name);
-        genf("%s", type_to_cdecl(x_type, ""));
+        genf("%s", type_to_cdecl(elem_type, ""));
         genf(", ");
         gen_expr(expr->call.args[0]);
         genf(", ");

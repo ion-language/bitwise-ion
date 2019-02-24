@@ -1881,6 +1881,28 @@ Operand resolve_expr_compound(Expr *expr, Type *expected_type) {
     return operand_lvalue(is_const ? type_const(type) : type);
 }
 
+void resolve_intrinsic_call(Expr *expr, Type *func_type) {
+    assert(expr->kind == EXPR_CALL);
+    assert(func_type->kind == TYPE_FUNC && func_type->func.is_intrinsic);
+    Sym *sym = get_resolved_sym(expr->call.expr);
+    if (sym->name == str_intern("apush")) {
+        // Func(a: T**, x: U)
+        // U convertible to T
+        Type *a_type = get_resolved_type(expr->call.args[0]);
+        Type *array_elem_type = NULL;
+        if (a_type->kind == TYPE_PTR && a_type->base->kind == TYPE_PTR) {
+            array_elem_type = a_type->base->base;
+        }
+        if (!array_elem_type || array_elem_type == type_void) {
+            fatal_error(expr->pos, "Argument 1: Invalid array type, must be T** got %s", get_type_name(a_type));
+        }
+        Operand x_operand = resolve_expr_rvalue(expr->call.args[1]);
+        if (!convert_operand(&x_operand, array_elem_type)) {
+            fatal_error(expr->pos, "Argument 2: Invalid elem type cast from %s to %s", get_type_name(x_operand.type), get_type_name(array_elem_type));
+        }
+    }
+}
+
 Operand resolve_expr_call(Expr *expr) {
     assert(expr->kind == EXPR_CALL);
     if (expr->call.expr->kind == EXPR_NAME) {
@@ -1927,6 +1949,9 @@ Operand resolve_expr_call(Expr *expr) {
                 fatal_error(expr->call.args[i]->pos, "Invalid type in function call argument. Expected %s, got %s", get_type_name(param_type), get_type_name(arg.type));
             }
         }
+    }
+    if (is_intrinsic) {
+        resolve_intrinsic_call(expr, func.type);
     }
     return operand_rvalue(func.type->func.ret);
 }

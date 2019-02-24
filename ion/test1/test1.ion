@@ -1047,7 +1047,11 @@ func test_std_array()
     a: float*;
     std.apush(&a, 42.0);
     std.apush(&a, 24.0);
-    // std.apush(&a, 41); // TODO(nicolas): highlights wonkyness of too tight type-checking
+    std.apush(&a, 41);
+//    std.apush(&a, "Hello"); // should not work
+
+    strings: char**;
+    std.apush(&strings, "Hello");
 }
 
 func main(argc: int, argv: char**): int {
