@@ -18,7 +18,6 @@ Typespec *parse_type_func_param(void) {
 }
 
 Typespec *parse_type_func(void) {
-    // BANANA
     SrcPos pos = token.pos;
     Typespec **args = NULL;
     bool has_varargs = false;
@@ -48,7 +47,7 @@ Typespec *parse_type_func(void) {
     if (match_token(TOKEN_COLON)) {
         ret = parse_type();
     }
-    return new_typespec_func(pos, args, buf_len(args), ret, has_varargs, varargs_type);
+    return new_typespec_func(pos, args, buf_len(args), ret, has_varargs, /* varargs_type */varargs_type);
 }
 
 Typespec *parse_type_base(void) {
@@ -736,7 +735,6 @@ FuncParam parse_decl_func_param(void) {
 }
 
 Decl *parse_decl_func(SrcPos pos) {
-    // BANANA
     const char *name = parse_name();
     expect_token(TOKEN_LPAREN);
     FuncParam *params = NULL;
