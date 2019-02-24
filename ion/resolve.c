@@ -743,7 +743,7 @@ Type *resolve_typespec(Typespec *typespec) {
         if (is_array_type(ret)) {
             fatal_error(typespec->pos, "Function return type cannot be array");
         }
-        result = type_func(/* is_intrinsic */false, args, buf_len(args), ret, /*has_varargs*/false, /*varargs_type*/NULL);
+        result = type_func(/* is_intrinsic */false, args, buf_len(args), ret, /*has_varargs*/false, /*varargs_type*/type_void);
         break;
     }
     default:
