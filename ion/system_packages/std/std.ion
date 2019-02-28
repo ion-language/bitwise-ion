@@ -793,7 +793,7 @@ func acatn_func(ap: void**, src: void const*, src_len: usize, elem_size: usize, 
     a := *ap;
     len := alen_func(a, elem_size, elem_align);
     afit_func(ap, len + src_len, elem_size, elem_align);
-    if (a != *ap && a <= src && src <= a + len*elem_size) {
+    if (a != *ap && a <= src && src < a + len*elem_size) {
         src = *ap + (src - a);
     }
     a = *ap;
