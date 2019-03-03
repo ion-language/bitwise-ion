@@ -42,6 +42,9 @@ struct SDL_AudioCVT {
 }
 
 @foreign
+typedef SDL_AudioFilter = func(cvt: SDL_AudioCVT*, format: SDL_AudioFormat);
+
+@foreign
 enum SDL_AudioStatus {
     SDL_AUDIO_STOPPED = 0,
     SDL_AUDIO_PLAYING,
