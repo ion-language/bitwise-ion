@@ -736,6 +736,7 @@ func anew_func(allocator: Allocator*, elem_size: usize, elem_align: usize): void
     size := elem_size + ahdrsize_func(elem_size, elem_align);
     align := ahdralign_func(elem_size, elem_align);
     mem := generic_alloc(allocator, size, align);
+    // @todo: bug, the preallocation of one elem_size causes misalignment of the ahdr struct
     hdr := (:Ahdr*)(mem + elem_size);
     hdr.allocator = allocator;
     hdr.len = 0;

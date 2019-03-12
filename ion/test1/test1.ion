@@ -68,11 +68,14 @@ func test_modify() {
     #static_assert(typeof(i) == typeof(int));
     p := &i;
     #static_assert(typeof(p) == typeof(:int*));
+/*
     p--;
     x := *p++;
     #assert(x == *--p);
     (*p)++;
     (*p)--;
+*/
+    x: int;
     stk: int[16];
     sp: int* = stk;
     *sp++ = 1;
