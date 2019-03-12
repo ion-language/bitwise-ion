@@ -975,7 +975,7 @@ func adel_func(a: void*, x: void const*, key_size: usize, elem_size: usize, elem
 @foreign
 func aprintf(a: char*, fmt: char const*, ...) {
     aprintf_func;
-    #foreign(preamble = "#define aprintf(a, fmt, ...) std_aprintf_func(&(a), (fmt), __VA_ARGS__)");
+    #foreign(preamble = "#define aprintf(a, fmt, ...) std_aprintf_func(&(a), (fmt) ,## __VA_ARGS__)");
 }
 
 // (t, a, _)
