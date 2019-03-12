@@ -274,6 +274,12 @@ void gen_func_decl(Decl *decl) {
     }
     buf_printf(result, ")");
     gen_sync_pos(decl->pos);
+    if (get_decl_note(decl, inline_name)) {
+        genlnf("INLINE");
+    }
+    if (get_decl_note(decl, str_intern("noinline"))) {
+        genlnf("NOINLINE");
+    }
     if (decl->func.ret_type) {
         genlnf("%s", type_to_cdecl(incomplete_decay(get_resolved_type(decl->func.ret_type)), result));
     } else {
@@ -1179,12 +1185,6 @@ void gen_defs(void) {
             char *buf = gen_buf;
             if (foreign) {
                 gen_buf = NULL;
-            }
-            if (get_decl_note(decl, inline_name)) {
-                genlnf("INLINE");
-            }
-            if (get_decl_note(decl, str_intern("noinline"))) {
-                genlnf("NOINLINE");
             }
             gen_func_decl(decl);
             genf(" ");
