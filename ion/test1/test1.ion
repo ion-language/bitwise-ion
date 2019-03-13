@@ -1331,9 +1331,9 @@ func test_tuple_deps() {
 func test_disposable(): File* {
     ctx: Recover;
     if (recover(&ctx)) {
-        file1 := open("c:/projects/sandbox/dummy.txt");
+        file1 := open("dummy.txt");
         secure(file1);
-        file2 := open("c:/projects/sandbox/dummy.txt");
+        file2 := open("dummy.txt");
         secure(file2);
         test_panic(&ctx, 10);
         #assert(0);
