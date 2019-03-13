@@ -664,14 +664,32 @@ struct Ahdr {
     buf: char[1];
 }
 
+struct Alayout {
+  align: int;
+  off_default_elem: int;
+  off_hdr: int;
+  off_elems: int;
+}
+
+func alayout(elem_size: usize, elem_align: usize): Alayout {
+  off_hdr := (elem_size + alignof(Ahdr) - 1) & ~(alignof(Ahdr) - 1);
+  return {
+    align = elem_align > alignof(Ahdr) ? elem_align : alignof(Ahdr),
+    off_default_elem = 0,
+    off_hdr = off_hdr,
+    off_elems = (off_hdr + offsetof(Ahdr, buf) + elem_align - 1) & ~(elem_align - 1),
+  };
+}
+
 @inline
 func ahdrsize_func(elem_size: usize, elem_align: usize): usize {
-    return (offsetof(Ahdr, buf) + elem_align - 1) & ~(elem_align - 1);
+    l := alayout(elem_size, elem_align);
+    return l.off_elems - l.off_hdr;
 }
 
 @inline
 func ahdralign_func(elem_size: usize, elem_align: usize): usize {
-    return elem_align > alignof(Ahdr) ? elem_align : alignof(Ahdr);
+    return alayout(elem_size, elem_align).align;
 }
 
 @inline
@@ -691,14 +709,15 @@ func acap_func(a: void*, elem_size: usize, elem_align: usize): usize {
 
 @inline
 func amem_func(a: void*, elem_size: usize, elem_align: usize): void* {
-    return a ? a - ahdrsize_func(elem_size, elem_align) - elem_size : 0;
+    l := alayout(elem_size, elem_align);
+    return a ? a - l.off_elems : 0;
 }
 
 @inline
 func amemsize_func(a: void*, elem_size: usize, elem_align: usize) {
-    hdrsize := ahdrsize_func(elem_size, elem_align);
+    l := alayout(elem_size, elem_align);
     cap := acap_func(a, elem_size, elem_align);
-    return a ? elem_size + hdrsize + cap*elem_size : 0;
+    return a ? l.off_elems + cap*elem_size : 0;
 }
 
 @inline
@@ -733,17 +752,18 @@ func afree_func(ap: void**, elem_size: usize, elem_align: usize) {
 
 @inline
 func anew_func(allocator: Allocator*, elem_size: usize, elem_align: usize): void* {
-    size := elem_size + ahdrsize_func(elem_size, elem_align);
-    align := ahdralign_func(elem_size, elem_align);
+    layout := alayout(elem_size, elem_align);
+    size := layout.off_elems;
+    align := layout.align;
     mem := generic_alloc(allocator, size, align);
-    // @todo: bug, the preallocation of one elem_size causes misalignment of the ahdr struct
-    hdr := (:Ahdr*)(mem + elem_size);
+    default_elem := mem + layout.off_default_elem;
+    libc.memset(default_elem, 0, elem_size);
+    hdr := (:Ahdr*)(mem + layout.off_hdr);
     hdr.allocator = allocator;
     hdr.len = 0;
     hdr.cap = 0;
     hdr.index = {indexer = default_indexer};
-    libc.memset(mem, 0, elem_size);
-    return hdr.buf;
+    return mem + layout.off_elems;
 }
 
 @inline
@@ -843,9 +863,9 @@ func asetcap_func(ap: void**, new_cap: usize, elem_size: usize, elem_align: usiz
             new_cap = cap + cap/2;
         }
     }
-    hdrsize := ahdrsize_func(elem_size, elem_align);
-    size := elem_size + hdrsize + new_cap*elem_size;
-    align := ahdralign_func(elem_size, elem_align);
+    layout := alayout(elem_size, elem_align);
+    size := layout.off_elems + new_cap*elem_size;
+    align := layout.align;
     new_mem: void*;
     new_hdr: Ahdr*;
     if (a) {
@@ -856,20 +876,20 @@ func asetcap_func(ap: void**, new_cap: usize, elem_size: usize, elem_align: usiz
         }
         mem := amem_func(a, elem_size, elem_align);
         new_mem = generic_alloc(hdr.allocator, size, align);
-        new_hdr = (:Ahdr*)(new_mem + elem_size);
-        libc.memcpy(new_mem, mem, elem_size + hdrsize + new_len*elem_size);
+        new_hdr = (:Ahdr*)(new_mem + layout.off_hdr);
+        libc.memcpy(new_mem, mem, layout.off_elems + new_len*elem_size);
         new_hdr.len = new_len;
         generic_free(hdr.allocator, mem);
     } else {
         new_mem = alloc(size, align);
-        new_hdr = (:Ahdr*)(new_mem + elem_size);
+        new_hdr = (:Ahdr*)(new_mem + layout.off_hdr);
         new_hdr.allocator = current_allocator;
         new_hdr.len = 0;
         new_hdr.index = {indexer = default_indexer};
         libc.memset(new_mem, 0, elem_size);
     }
     new_hdr.cap = new_cap;
-    *ap = new_hdr.buf;
+    *ap = new_mem + layout.off_elems;
 }
 
 @inline
