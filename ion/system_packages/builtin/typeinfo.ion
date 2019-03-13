@@ -82,3 +82,16 @@ struct any {
     ptr: void*;
     type: typeid;
 }
+
+func layout_struct(fields: TypeFieldInfo*, num_fields: usize): usize {
+    alignment := 0;
+    off := 0;
+    for (i := 0; i < num_fields; i++) {
+      ti := get_typeinfo(fields[i].type);
+      off = (off + ti.align - 1) & ~(ti.align - 1);
+      fields[i].offset  = off;
+      alignment = alignment < ti.align ? ti.align : alignment;
+      off += ti.size;
+    }
+    return alignment;
+}
