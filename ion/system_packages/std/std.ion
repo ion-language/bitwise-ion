@@ -16,12 +16,12 @@ func cmp(p: void const*, q: void const*, size: usize): int {
     return libc.memcmp(p, q, size);
 }
 
-func sdup(str: char const*): char* {
+func sdup(allocator: Allocator*, str: char const*): char* {
+    // @todo @defect we want to do new (allocator)[len+1] str, but it copies str and not str[0..len+1)
     len := slen(str);
-    buf: char* = alloc(len+1, 1);
-    copy(buf, str, len);
-    buf[len] = 0;
-    return buf;
+    new_str: char* = new(allocator)[len+1] undef;
+    copy(&new_str[0], &str[0], len + 1);
+    return new_str;
 }
 
 func slen(str: char const*): usize {
