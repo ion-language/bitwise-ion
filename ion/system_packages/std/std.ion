@@ -184,11 +184,13 @@ struct ArenaAllocator {
     end: char*;
 }
 
-const ARENA_MIN_BLOCK_SIZE: usize = sizeof(ullong); // small just to test things, would normally be 1 MB or whatever
+const ARENA_MIN_BLOCK_SIZE: usize = 64*1024;
+// ^ you can make it small (sizeof(ullong)) just to test things
 const ARENA_MIN_BLOCK_ALIGN: usize = sizeof(ullong);
 
-func arena_allocator(allocator: void*): ArenaAllocator {
-    return {{arena_alloc, noop_free}, allocator, ARENA_MIN_BLOCK_SIZE};
+// @todo implement implicit/default arguments in ion language
+func arena_allocator(allocator: void*, min_block_size: usize): ArenaAllocator {
+    return {{arena_alloc, noop_free}, allocator, min_block_size? min_block_size : ARENA_MIN_BLOCK_SIZE };
 }
 
 func arena_alloc_grow(self: ArenaAllocator*, size: usize, align: usize): void* {
@@ -333,8 +335,8 @@ struct NameMap {
     collisions: NameNode*[];
 }
 
-func namemap_init(self: NameMap*, allocator: Allocator*) {
-    self.arena = arena_allocator(allocator);
+func namemap_init(self: NameMap*, allocator: Allocator*, min_block_size: usize) {
+    self.arena = arena_allocator(allocator, min_block_size);
     self.nodes = anew(&self.arena);
     self.collisions = anew(&self.arena);
 }
