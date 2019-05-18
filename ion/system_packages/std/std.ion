@@ -676,10 +676,10 @@ struct Alayout {
 func alayout(elem_size: usize, elem_align: usize): Alayout {
   off_hdr := (elem_size + alignof(Ahdr) - 1) & ~(alignof(Ahdr) - 1);
   return {
-    align = elem_align > alignof(Ahdr) ? elem_align : alignof(Ahdr),
+    align = int(elem_align > alignof(Ahdr) ? elem_align : alignof(Ahdr)),
     off_default_elem = 0,
-    off_hdr = off_hdr,
-    off_elems = (off_hdr + offsetof(Ahdr, buf) + elem_align - 1) & ~(elem_align - 1),
+    off_hdr = int(off_hdr),
+    off_elems = int((off_hdr + offsetof(Ahdr, buf) + elem_align - 1) & ~(elem_align - 1)),
   };
 }
 
