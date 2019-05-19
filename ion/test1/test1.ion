@@ -1223,7 +1223,7 @@ func test_namemap() {
     block: char[10 * 1024];
     temp := temp_allocator(block, sizeof(block));
     namemap: NameMap;
-    namemap_init(&namemap, &temp);
+    namemap_init(&namemap, &temp, 0);
     a := namemap_get(&namemap, "Per");
     b := namemap_get(&namemap, "Per");
     #assert(a == b);
@@ -1295,7 +1295,7 @@ func test_new() {
     temp := temp_allocator(block, sizeof(block));
     e := new(&temp) Person{name = "Per", age = 37};
     mark := temp_begin(&temp);
-    arena := arena_allocator(&temp);
+    arena := arena_allocator(&temp, 0);
     // arena_free(&arena);
     temp_end(&temp, mark);
     g := new(&temp) float{1.42};
