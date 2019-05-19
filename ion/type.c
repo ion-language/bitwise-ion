@@ -342,15 +342,19 @@ Type *type_array(Type *base, size_t num_elems, bool incomplete_elems) {
             }
         }
     }
-    complete_type(base);
     Type *type = type_alloc(TYPE_ARRAY);
     type->nonmodifiable = base->nonmodifiable;
-    type->size = num_elems * type_sizeof(base);
-    type->align = type_alignof(base);
     type->base = base;
     type->num_elems = num_elems;
     type->incomplete_elems = incomplete_elems;
-    if (!incomplete_elems) {
+    if (incomplete_elems) {
+        type->size = 0;
+        type->align = 0;
+    } else {
+        complete_type(base);
+        type->size = num_elems * type_sizeof(base);
+        type->align = type_alignof(base);
+
         CachedArrayType *new_cached = xmalloc(sizeof(CachedArrayType));
         new_cached->type = type;
         new_cached->next = cached;

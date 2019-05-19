@@ -1393,6 +1393,14 @@ func test_incomplete_array_param() {
 	g = f_incomplete_array_param;
 }
 
+struct NotACycle {
+    items: NotACycleItem[];
+}
+
+struct NotACycleItem {
+    inside: NotACycle;
+}
+
 func main(argc: int, argv: char**): int {
     if (argv == 0) {
         libc.printf("argv is null\n");
