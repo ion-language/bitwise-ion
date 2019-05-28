@@ -192,7 +192,7 @@ const ARENA_MIN_BLOCK_ALIGN: usize = sizeof(ullong);
 func arena_allocator(allocator: void*, min_block_size: usize): ArenaAllocator {
     return {
         base = {arena_alloc, noop_free},
-        allocator = allocator,
+        allocator = !allocator? current_allocator : (:Allocator*)allocator,
         block_size = min_block_size? min_block_size : ARENA_MIN_BLOCK_SIZE,
         blocks = anew(allocator),
     };
