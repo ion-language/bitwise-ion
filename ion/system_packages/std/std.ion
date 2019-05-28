@@ -190,7 +190,12 @@ const ARENA_MIN_BLOCK_ALIGN: usize = sizeof(ullong);
 
 // @todo implement implicit/default arguments in ion language
 func arena_allocator(allocator: void*, min_block_size: usize): ArenaAllocator {
-    return {{arena_alloc, noop_free}, allocator, min_block_size? min_block_size : ARENA_MIN_BLOCK_SIZE };
+    return {
+        base = {arena_alloc, noop_free},
+        allocator = allocator,
+        block_size = min_block_size? min_block_size : ARENA_MIN_BLOCK_SIZE,
+        blocks = anew(allocator),
+    };
 }
 
 func arena_alloc_grow(self: ArenaAllocator*, size: usize, align: usize): void* {
