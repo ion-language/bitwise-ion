@@ -347,9 +347,9 @@ func namemap_init(self: NameMap*, allocator: Allocator*, min_block_size: usize) 
 }
 
 func namemap_free(self: NameMap*) {
-    arena_free(&self.arena);
     afree(self.nodes);
     afree(self.collisions);
+    arena_free(&self.arena);
 }
 
 func namemap_getn(self: NameMap*, buf: char const*, len: usize): char const* {
