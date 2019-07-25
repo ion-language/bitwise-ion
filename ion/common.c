@@ -47,7 +47,9 @@ void *xmalloc(size_t num_bytes) {
 
 void *memdup(void *src, size_t size) {
     void *dest = xmalloc(size);
-    memcpy(dest, src, size);
+    if (size > 0) {
+      memcpy(dest, src, size);
+    }
     return dest;
 }
 

@@ -378,7 +378,7 @@ Type *type_func(Type **params, size_t num_params, Type *ret, bool intrinsic, boo
     for (TypeLink *it = cached; it; it = it->next) {
         Type *type = it->type;
         if (type->func.num_params == num_params && type->func.ret == ret && type->func.intrinsic == intrinsic && type->func.has_varargs == has_varargs && type->func.varargs_type == varargs_type) {
-            if (memcmp(type->func.params, params, params_size) == 0) {
+            if (params_size == 0 || memcmp(type->func.params, params, params_size) == 0) {
                 return type;
             }
         }
