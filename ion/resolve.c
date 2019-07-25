@@ -2807,12 +2807,17 @@ void postinit_builtin(void) {
 }
 
 void add_package_decls(Package *package) {
+    // TODO:
+    // Process declare notes early (otherwise we'd
+    // fatal error on notes declared in a package where they are being
+    // used) I've discovered this was happening in the `builtin'
+    // module after cloning it on a new machine, as the `notes.ion'
+    // file would get parsed last, and all `#static_assert's would
+    // start triggering an "Unknown declaration #directive"
+    // error. -Nicolas
     for (size_t i = 0; i < package->num_decls; i++) {
         Decl *decl = package->decls[i];
         if (decl->kind == DECL_NOTE) {
-            if (!map_get(&decl_note_names, decl->note.name)) {
-                warning(decl->pos, "Unknown declaration #directive '%s'", decl->note.name);
-            }
             if (decl->note.name == declare_note_name) {
                 if (decl->note.num_args != 1) {
                     fatal_error(decl->pos, "#declare_note takes 1 argument");
@@ -2822,7 +2827,16 @@ void add_package_decls(Package *package) {
                     fatal_error(decl->pos, "#declare_note argument must be name");
                 }
                 map_put(&decl_note_names, arg->name, (void *)1);
-            } else if (decl->note.name == static_assert_name) {
+            }
+        }
+    }
+    for (size_t i = 0; i < package->num_decls; i++) {
+        Decl *decl = package->decls[i];
+        if (decl->kind == DECL_NOTE) {
+            if (!map_get(&decl_note_names, decl->note.name)) {
+                warning(decl->pos, "Unknown declaration #directive '%s'", decl->note.name);
+            }
+            if (decl->note.name == static_assert_name) {
                 // TODO: decide how to handle top-level static asserts wrt laziness/tree shaking
                 if (!flag_lazy) {
                     resolve_static_assert(decl->note);
