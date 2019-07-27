@@ -254,6 +254,23 @@ char *typespec_to_cdecl(Typespec *typespec, const char *str) {
     }
 }
 
+void gen_decl_from_typespec(char** bufp, Typespec* typespec, const char* str) {
+  char* buf = *bufp;
+  // TODO: UGLY: here we emit the external name to prevent some
+  // problems. See for instance usize which is defined as
+  // uint64 which can trigger a warning because it isn't the
+  // same as size_t. Interestingly, when emitting the
+  // typespec for a field, we retain the original type
+  Sym *sym = get_resolved_sym(typespec);
+  if (sym && sym->external_name) {
+    buf_printf(buf, "%s %s", sym->external_name, str);
+  } else {
+    Type *type = get_resolved_type(typespec);
+    buf_printf(buf, "%s", type_to_cdecl(incomplete_decay(type), str));
+  }
+  *bufp = buf;
+}
+
 void gen_func_decl(Decl *decl) {
     assert(decl->kind == DECL_FUNC);
     char *result = NULL;
@@ -266,7 +283,7 @@ void gen_func_decl(Decl *decl) {
             if (i != 0) {
                 buf_printf(result, ", ");
             }
-            buf_printf(result, "%s", type_to_cdecl(incomplete_decay(get_resolved_type(param.type)), param.name));
+            gen_decl_from_typespec(&result, param.type, param.name);
         }
     }
     if (decl->func.has_varargs) {
@@ -281,7 +298,10 @@ void gen_func_decl(Decl *decl) {
         genlnf("NOINLINE");
     }
     if (decl->func.ret_type) {
-        genlnf("%s", type_to_cdecl(incomplete_decay(get_resolved_type(decl->func.ret_type)), result));
+        char *temp = 0;
+        gen_decl_from_typespec(&temp, decl->func.ret_type, result);
+        genlnf("%s", temp);
+        buf_free(temp);
     } else {
         genlnf("void %s", result);
     }
