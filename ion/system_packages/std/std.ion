@@ -342,8 +342,8 @@ struct NameMap {
 
 func namemap_init(self: NameMap*, allocator: Allocator*, min_block_size: usize) {
     self.arena = arena_allocator(allocator, min_block_size);
-    self.nodes = anew(&self.arena);
-    self.collisions = anew(&self.arena);
+    self.nodes = anew(&self.arena.base);
+    self.collisions = anew(&self.arena.base);
 }
 
 func namemap_free(self: NameMap*) {
@@ -748,7 +748,8 @@ func aclear_func(a: void*, elem_size: usize, elem_align: usize) {
 }
 
 @inline
-func afree_func(ap: void**, elem_size: usize, elem_align: usize) {
+func afree_func(ap_: void*, elem_size: usize, elem_align: usize) {
+    ap: void** = ap_;
     if (a := *ap; a) {
         hdr := ahdr_func(a, elem_size, elem_align);
         index_free(hdr.index);
@@ -780,7 +781,8 @@ func apop_func(a: void*, elem_size: usize, elem_align: usize) {
     }
 }
 
-func afill_func(ap: void**, x: void const*, n: usize, elem_size: usize, elem_align: usize) {
+func afill_func(ap_: void*, x: void const*, n: usize, elem_size: usize, elem_align: usize) {
+    ap: void** = ap_;
     len := alen_func(*ap, elem_size, elem_align);
     afit_func(ap, len + n, elem_size, elem_align);
     a := *ap;
@@ -793,7 +795,8 @@ func afill_func(ap: void**, x: void const*, n: usize, elem_size: usize, elem_ali
 }
 
 @inline
-func apush_func(ap: void**, x: void const*, elem_size: usize, elem_align: usize): usize {
+func apush_func(ap_: void*, x: void const*, elem_size: usize, elem_align: usize): usize {
+    ap: void** = ap_;
     a := *ap;
     i := alen_func(a, elem_size, elem_align);
     if (i >= acap_func(a, elem_size, elem_align)) {
@@ -817,7 +820,8 @@ func adeln_func(a: void*, i: usize, n: usize, elem_size: usize, elem_align: usiz
     ahdr_func(a, elem_size, elem_align).len -= n;
 }
 
-func acatn_func(ap: void**, src: void const*, src_len: usize, elem_size: usize, elem_align: usize) {
+func acatn_func(ap_: void**, src: void const*, src_len: usize, elem_size: usize, elem_align: usize) {
+    ap: void** = ap_;
     a := *ap;
     len := alen_func(a, elem_size, elem_align);
     afit_func(ap, len + src_len, elem_size, elem_align);
@@ -829,11 +833,12 @@ func acatn_func(ap: void**, src: void const*, src_len: usize, elem_size: usize, 
     ahdr_func(a, elem_size, elem_align).len += src_len;
 }
 
-func acat_func(ap: void**, src: void*, elem_size: usize, elem_align: usize) {
-    acatn_func(ap, src, alen_func(src, elem_size, elem_align), elem_size, elem_align);
+func acat_func(ap_: void*, src: void*, elem_size: usize, elem_align: usize) {
+    acatn_func(ap_, src, alen_func(src, elem_size, elem_align), elem_size, elem_align);
 }
 
-func aprintf_func(ap: void**, fmt: char const*, ...) {
+func aprintf_func(ap_: void*, fmt: char const*, ...) {
+    ap: void** = ap_;
     a := *ap;
     args: libc.va_list;
     libc.va_start(args, fmt);
@@ -857,7 +862,8 @@ func aprintf_func(ap: void**, fmt: char const*, ...) {
 }
 
 @noinline
-func asetcap_func(ap: void**, new_cap: usize, elem_size: usize, elem_align: usize) {
+func asetcap_func(ap_: void*, new_cap: usize, elem_size: usize, elem_align: usize) {
+    ap: void** = ap_;
     a := *ap;
     cap := acap_func(a, elem_size, elem_align);
     if (new_cap > cap) {
@@ -904,7 +910,8 @@ func adefault_func(a: void*, elem_size: usize, elem_align: usize): void* {
     return a ? amem_func(a, elem_size, elem_align) : 0;
 }
 
-func asetdefault_func(ap: void**, x: void const*, key_size: usize, elem_size: usize, elem_align: usize) {
+func asetdefault_func(ap_: void*, x: void const*, key_size: usize, elem_size: usize, elem_align: usize) {
+    ap: void** = ap_;
     if (!*ap) {
         *ap = anew_func(0, elem_size, elem_align);
     }
@@ -913,13 +920,15 @@ func asetdefault_func(ap: void**, x: void const*, key_size: usize, elem_size: us
 }
 
 @inline
-func afit_func(ap: void**, min_cap: usize, elem_size: usize, elem_align: usize) {
+func afit_func(ap_: void*, min_cap: usize, elem_size: usize, elem_align: usize) {
+    ap: void** = ap_;
     if (min_cap > acap_func(*ap, elem_size, elem_align)) {
         asetcap_func(ap, min_cap, elem_size, elem_align);
     }
 }
 
-func aindex_func(ap: void**, new_index: Index, key_size: usize, elem_size: usize, elem_align: usize) {
+func aindex_func(ap_: void*, new_index: Index, key_size: usize, elem_size: usize, elem_align: usize) {
+    ap: void** = ap_;
     a := *ap;
     if (!a) {
         *ap = anew_func(0, elem_size, elem_align);
@@ -947,7 +956,8 @@ func agetp_func(a: void*, x: void const*, key_size: usize, elem_size: usize, ele
     return i != alen_func(a, elem_size, elem_align) ? a + i*elem_size + (elem_size - key_size) : 0;
 }
 
-func aget_func(ap: void**, x: void const*, key_size: usize, elem_size: usize, elem_align: usize): void* {
+func aget_func(ap_: void*, x: void const*, key_size: usize, elem_size: usize, elem_align: usize): void* {
+    ap: void** = ap_;
     if (!*ap) {
         *ap = anew_func(0, elem_size, elem_align);
     }
@@ -958,7 +968,8 @@ func aget_func(ap: void**, x: void const*, key_size: usize, elem_size: usize, el
     return i != len ? a + i*elem_size + (elem_size - key_size) : def + (elem_size - key_size);
 }
 
-func aput_func(ap: void**, x: void const*, key_size: usize, elem_size: usize, elem_align: usize): usize {
+func aput_func(ap_: void*, x: void const*, key_size: usize, elem_size: usize, elem_align: usize): usize {
+    ap: void** = ap_;
     a := *ap;
     if (!a) {
         *ap = anew_func(0, elem_size, elem_align);
