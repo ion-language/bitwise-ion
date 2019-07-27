@@ -1112,10 +1112,10 @@ void gen_decl(Sym *sym) {
         genf(")");
         break;
     case DECL_VAR:
-        if (is_decl_threadlocal(decl)) {
-            genlnf("THREADLOCAL");
-        }
         genlnf("extern ");
+        if (is_decl_threadlocal(decl)) {
+            genf("THREADLOCAL ");
+        }
         if (decl->var.type && !is_incomplete_array_typespec(decl->var.type)) {
             genf("%s", typespec_to_cdecl(decl->var.type, get_gen_name(sym)));
         } else {
