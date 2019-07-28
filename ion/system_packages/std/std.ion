@@ -43,7 +43,7 @@ func file_dispose(data: void*) {
 }
 
 func open(path: char const*): File* {
-    libc_file := libc.fopen(path, "r");
+    libc_file := libc.fopen(path, "r"); // @todo shouldn't this be rb rather than r?
     if (!libc_file) {
         return 0;
     }
