@@ -546,8 +546,8 @@ SwitchCase parse_stmt_switch_case(void) {
         if (match_keyword(case_keyword)) {
             if (!is_first_case) {
                 warning_here("Use comma-separated expressions to match multiple values with one case label");
-                is_first_case = false;
             }
+            is_first_case = false;
             buf_push(patterns, parse_switch_case_pattern());
             while (match_token(TOKEN_COMMA)) {
                 buf_push(patterns, parse_switch_case_pattern());
@@ -843,7 +843,7 @@ Note parse_note(void) {
     }
     return new_note(pos, name, args, buf_len(args));
 }
-    
+
 Notes parse_notes(void) {
     Note *notes = NULL;
     while (match_token(TOKEN_AT)) {
