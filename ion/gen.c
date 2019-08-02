@@ -1214,6 +1214,17 @@ void gen_defs(void) {
                 gen_buf = buf;
             }
         } else if (decl->kind == DECL_VAR) {
+            if (is_decl_foreign(decl)) {
+                // certain foreign definitions may look like functions,
+                // variables etc... but we should not define them. An
+                // example is `stdout`, `stdin` which we can't define as a
+                // variable, as they may be implemented as macros. (For
+                // instance on windows)
+                //
+                // @todo should these be marked as intrinsics?
+                continue;
+            }
+
             if (is_decl_threadlocal(decl)) {
                 genlnf("THREADLOCAL");
             }
