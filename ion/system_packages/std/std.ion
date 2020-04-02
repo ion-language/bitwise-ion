@@ -24,9 +24,37 @@ func sdup(allocator: Allocator*, str: char const*): char* {
     return new_str;
 }
 
+func sprintfv(buf: char*, size: usize, fmt: char const*, args: libc.va_list): int {
+    return libc.vsnprintf(buf, size, fmt, args);
+}
+
+func sprintf(buf: char*, size: usize, fmt: char const*, ...): int {
+    args: libc.va_list;
+    libc.va_start(args, fmt);
+    res := sprintfv(buf, size, fmt, args);
+    libc.va_end(args);
+    return res;
+}
+
+func strfv(allocator: Allocator*, fmt: char const*, args: libc.va_list): char* {
+    size := sprintfv(0, 0, fmt, args) + 1;
+    str: char* = new(allocator)[size] undef;
+    sprintfv(str, size, fmt, args);
+    return str;
+}
+
+func strf(allocator: Allocator*, fmt: char const*, ...): char* {
+    args: libc.va_list;
+    libc.va_start(args, fmt);
+    res := strfv(allocator, fmt, args);
+    libc.va_end(args);
+    return res;
+}
+
 func slen(str: char const*): usize {
     return libc.strlen(str);
 }
+
 
 struct File {
     base: Disposable;
