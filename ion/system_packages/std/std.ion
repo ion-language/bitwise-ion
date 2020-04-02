@@ -274,7 +274,7 @@ func pool_free(allocator: void*, ptr: void*) {
     self: PoolAllocator* = allocator;
     elem: PoolElem* = ptr;
     elem.next = self.free;
-    self.free = elem;    
+    self.free = elem;
 }
 
 func pool_grow(self: PoolAllocator*): bool {
@@ -508,7 +508,7 @@ func hash_init(index: HashIndex*, len: uint32, allocator: Allocator*) {
 func hash_get_slot(index: HashIndex*, a: void const*, x: void const*, h: uint32, stride: usize, size: usize): HashSlot* {
     for (i := h) {
         i &= index.mask;
-        slot := &index.slots[i]; 
+        slot := &index.slots[i];
         if (slot.i == HASH_EMPTY || (slot.h == h && libc.memcmp(a + slot.i*stride, x, size) == 0)) {
             return slot;
         }
