@@ -18,6 +18,14 @@ void add_package_search_path_range(const char *start, const char *end) {
     add_package_search_path(path);
 }
 
+bool is_dir(const char* path) {
+    DirListIter iter;
+    dir_list(&iter, path);
+    bool is_dir = iter.valid;
+    dir_list_free(&iter);
+    return is_dir;
+}
+
 void init_package_search_paths(void) {
     const char *ionhome_var = getenv("IONHOME");
     if (!ionhome_var) {
@@ -40,6 +48,13 @@ void init_package_search_paths(void) {
         }
         if (*start) {
             add_package_search_path(start);
+        }
+    }
+    for (int i = 0; i < num_package_search_paths; i++) {
+        const char* path = package_search_paths[i];
+        if (!is_dir(path)) {
+            printf("error: package search path '%s' isn't a valid directory.\n", path);
+            exit(1);
         }
     }
 }
