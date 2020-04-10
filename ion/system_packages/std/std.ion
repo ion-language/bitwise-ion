@@ -981,7 +981,8 @@ func ageti_func(a: void*, x: void const*, key_size: usize, elem_size: usize, ele
 
 func agetp_func(a: void*, x: void const*, key_size: usize, elem_size: usize, elem_align: usize): void* {
     i := ageti_func(a, x, key_size, elem_size, elem_align);
-    return i != alen_func(a, elem_size, elem_align) ? a + i*elem_size + (elem_size - key_size) : 0;
+    offset := i*elem_size + (key_size + elem_align - 1) & ~(elem_align - 1);
+    return i != alen_func(a, elem_size, elem_align) ? a + offset : 0;
 }
 
 func aget_func(ap_: void*, x: void const*, key_size: usize, elem_size: usize, elem_align: usize): void* {
@@ -993,7 +994,8 @@ func aget_func(ap_: void*, x: void const*, key_size: usize, elem_size: usize, el
     i := ageti_func(a, x, key_size, elem_size, elem_align);
     len := alen_func(a, elem_size, elem_align);
     def := adefault_func(a, elem_size, elem_align);
-    return i != len ? a + i*elem_size + (elem_size - key_size) : def + (elem_size - key_size);
+    elem_offset := (key_size + elem_align - 1) & ~(elem_align - 1);
+    return i != len ? a + i*elem_size + elem_offset : def + elem_offset;
 }
 
 func aput_func(ap_: void*, x: void const*, key_size: usize, elem_size: usize, elem_align: usize): usize {
