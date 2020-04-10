@@ -1223,7 +1223,7 @@ func test_namemap() {
     block: char[10 * 1024];
     temp := temp_allocator(block, sizeof(block));
     namemap: NameMap;
-    namemap_init(&namemap, &temp, 0);
+    namemap_init(&namemap, &temp, 1024);
     a := namemap_get(&namemap, "Per");
     b := namemap_get(&namemap, "Per");
     #assert(a == b);
