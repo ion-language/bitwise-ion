@@ -1124,7 +1124,7 @@ func asetlen(a: void*, new_len: usize): usize {
 @foreign @intrinsic
 func adefault(a: void*, v: void) {
     asetdefault_func;
-    #foreign(preamble = "#define adefault(t, tv, a, v) std_asetdefault_func(&(a), (t[]){(v)}, sizeof(tv), sizeof(t), alignof(t))");
+    #foreign(preamble = "#define adefault(t, tv, a, v) std_asetdefault_func(&(a), (tv[]){(v)}, sizeof(tv), sizeof(t), alignof(t))");
 }
 
 // (t, a, v, n)
