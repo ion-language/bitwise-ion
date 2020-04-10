@@ -1247,6 +1247,29 @@ func test_aget() {
     }
 }
 
+func test_associative_array() {
+    arr: {char, char*}[]; // key and value not being the same size
+    std.aput(arr, 'a', "the letter a");
+    std.aput(arr, 'A', "the letter a");
+    std.aput(arr, 'b', "the letter b");
+    std.aput(arr, 'c', "the letter c");
+
+    needle: char** = std.agetp(arr, 'a');
+    #assert(needle && 0 == libc.strcmp(*needle, "the letter a"));
+    value:= std.aget(arr, 'a');
+    #assert(*needle == value);
+    needle = std.agetp(arr, 'b');
+    #assert(needle && 0 == libc.strcmp(*needle, "the letter b"));
+    needle = std.agetp(arr, 'Z');
+    #assert(!needle);
+
+    y := "the unknown letter";
+    std.adefault(arr, y);
+    value = std.aget(arr, 0);
+    #assert(value == y);
+}
+
+
 @threadlocal
 var tls_test = 42;
 
@@ -1450,6 +1473,7 @@ func main(argc: int, argv: char**): int {
     test_new();
     test_disposable();
     test_aget();
+    test_associative_array();
     test_tuple_deps();
     test_autohash();
     test_undef();
