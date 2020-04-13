@@ -605,10 +605,10 @@ void unify_arithmetic_operands(Operand *left, Operand *right) {
             } else if (is_signed_type(right->type) && type_rank(left->type) >= type_rank(right->type)) {
                 cast_operand(right, left->type);
             } else if (is_signed_type(left->type) && type_sizeof(left->type) > type_sizeof(right->type)) {
-                cast_operand(right, left->type);            
+                cast_operand(right, left->type);
             } else if (is_signed_type(right->type) && type_sizeof(right->type) > type_sizeof(left->type)) {
                 cast_operand(left, right->type);
-            } else { 
+            } else {
                 Type *type = unsigned_type(is_signed_type(left->type) ? left->type : right->type);
                 cast_operand(left, type);
                 cast_operand(right, type);
@@ -2045,7 +2045,7 @@ Operand resolve_expr_call_default(Operand func, Expr *expr) {
         }
     }
     return operand_rvalue(func.type->func.ret);
-} 
+}
 
 Operand resolve_expr_call_intrinsic(Operand func, Expr *expr, Type *expected_type) {
     Sym *sym = get_resolved_sym(expr->call.expr);
@@ -2622,7 +2622,7 @@ Operand resolve_expected_expr(Expr *expr, Type *expected_type) {
         break;
     case EXPR_INT:
         result = resolve_expr_int(expr);
-        break;  
+        break;
     case EXPR_FLOAT:
         result = operand_const(expr->float_lit.suffix == SUFFIX_D ? type_double : type_float, (Val){0});
         break;
