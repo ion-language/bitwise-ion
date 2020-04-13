@@ -642,7 +642,7 @@ void set_reachable(void *ptr) {
 }
 
 uint8_t get_reachable(void *ptr) {
-    return (int)(intptr_t)map_get(&reachable_map, ptr);
+    return (uint8_t)(intptr_t)map_get(&reachable_map, ptr);
 }
 
 Map resolved_type_map;
