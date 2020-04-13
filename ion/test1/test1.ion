@@ -119,7 +119,7 @@ func test_loops() {
     while (0) {
     }
     for (i := 0; i < 10; i++) {
-    }   
+    }
     for (;;) {
         break;
     }
@@ -883,6 +883,13 @@ func test_limits() {
     uintptr_max := UINTPTR_MAX;
     intptr_min := INTPTR_MIN;
     intptr_max := INTPTR_MAX;
+
+    float_max := FLOAT_MAX;
+    float_min := FLOAT_MIN;
+    float_min_normal_magnitude := FLOAT_MAGNITUDE_MIN;
+    double_max := DOUBLE_MAX;
+    double_min := DOUBLE_MIN;
+    double_min_normal_magnitude := DOUBLE_MAGNITUDE_MIN;
 }
 
 func test_alignof() {

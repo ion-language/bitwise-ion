@@ -1,5 +1,6 @@
 #foreign(header = "<limits.h>")
 #foreign(header = "<stdint.h>")
+#foreign(header = "<float.h>")
 
 #static_assert(sizeof(bool) == 1)
 #static_assert(sizeof(char) == 1)
@@ -155,3 +156,23 @@ const INT64_MIN = LLONG_MIN;
 
 @foreign
 const INT64_MAX = LLONG_MAX;
+
+@foreign("FLT_MAX")
+const FLOAT_MAX = 3.40282346e+38;
+
+// watch out, it's different fron C's FLT_MIN
+const FLOAT_MIN = -FLOAT_MAX;
+
+// lowest float that is not subnormal
+@foreign("FLT_MIN")
+const FLOAT_MAGNITUDE_MIN = 1.175494351e-38;
+
+@foreign("DBL_MAX")
+const DOUBLE_MAX = +1.3482698511467367e+308d;
+
+// watch out, it's different from C's DBL_MIN
+const DOUBLE_MIN = -DOUBLE_MAX;
+
+// lowest double that is not subnormal
+@foreign("DBL_MIN")
+const DOUBLE_MAGNITUDE_MIN = 2.2250738585072014e-308d;
