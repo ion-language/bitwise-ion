@@ -563,7 +563,7 @@ void scan_str(void) {
             } else if (val == '\\') {
                 stream++;
                 if (*stream == 'x') {
-                    val = scan_hex_escape();
+                    val = (char)scan_hex_escape();
                 } else {
                     val = escape_to_char[(unsigned char)*stream];
                     if (val == 0 && *stream != '0') {
