@@ -1505,7 +1505,16 @@ Operand resolve_expr_field(Expr *expr) {
             return field_operand;
         }
     }
-    fatal_error(expr->pos, "No field named '%s'", expr->field.name);
+    assert(type->kind == TYPE_TUPLE || type->sym);
+    const char *aggregate_kind_name = NULL;
+    switch(type->kind) {
+    case TYPE_STRUCT: aggregate_kind_name = "struct"; break;
+    case TYPE_UNION: aggregate_kind_name = "union"; break;
+    case TYPE_TUPLE: aggregate_kind_name = "tuple"; break;
+    default: assert(false); break;
+    }
+
+    fatal_error(expr->pos, "No field named '%s' in %s '%s'", expr->field.name, aggregate_kind_name, type->sym? type->sym->name : "<null>"); // @ui tell me the field of what. In presence of type inference we need to know the struct name. Also you could point at where the definition of type exists
     return operand_null;
 }
 
