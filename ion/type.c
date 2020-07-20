@@ -295,7 +295,7 @@ Type *type_const(Type *base) {
     }
     Type *type = map_get(&cached_const_types, base);
     if (!type) {
-        complete_type(base);
+        complete_type(base); // @todo this prevent usage of const with opaque foreign types. Which is a bit funny, considering const is only used right now to denote foreign interfaces
         type = type_alloc(TYPE_CONST);
         type->nonmodifiable = true;
         type->size = base->size;
