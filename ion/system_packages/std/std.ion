@@ -37,7 +37,9 @@ func sprintf(buf: char*, size: usize, fmt: char const*, ...): int {
 }
 
 func strfv(allocator: Allocator*, fmt: char const*, args: libc.va_list): char* {
-    size := sprintfv(0, 0, fmt, args) + 1;
+    targs: libc.va_list;
+    libc.va_copy(targs, args);
+    size := sprintfv(0, 0, fmt, targs) + 1;
     str: char* = new(allocator)[size] undef;
     sprintfv(str, size, fmt, args);
     return str;
