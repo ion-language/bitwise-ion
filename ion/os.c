@@ -196,7 +196,7 @@ const char *parse_flags(int *argc_ptr, const char ***argv_ptr) {
             }
             FlagDef *flag = get_flag_def(name);
             if (!flag) {
-                printf("Unknown flag %s\n", arg);
+                fatal("Unknown flag %s\n", arg);
                 continue;
             }
             switch (flag->kind) {
@@ -208,7 +208,7 @@ const char *parse_flags(int *argc_ptr, const char ***argv_ptr) {
                     i++;
                     *flag->ptr.s = argv[i];
                 } else {
-                    printf("No value argument after -%s\n", arg);
+                    fatal("No value argument after -%s\n", arg);
                 }
                 break;
             case FLAG_ENUM: {
@@ -217,7 +217,7 @@ const char *parse_flags(int *argc_ptr, const char ***argv_ptr) {
                     i++;
                     option = argv[i];
                 } else {
-                    printf("No value after %s\n", arg);
+                    fatal("No value after %s\n", arg);
                     break;
                 }
                 bool found = false;
@@ -229,12 +229,12 @@ const char *parse_flags(int *argc_ptr, const char ***argv_ptr) {
                     }
                 }
                 if (!found) {
-                    printf("Invalid value '%s' for %s\n", option, arg);
+                    fatal("Invalid value '%s' for %s", option, arg);
                 }
                 break;
             }
             default:
-                printf("Unhandled flag kind\n");
+                fatal("Unhandled flag kind\n");
                 break;
             }
         } else {
