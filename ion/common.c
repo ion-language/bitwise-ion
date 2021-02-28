@@ -11,9 +11,9 @@
 void fatal(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
-    printf("FATAL: ");
-    vprintf(fmt, args);
-    printf("\n");
+    fprintf(stderr, "FATAL: ");
+    vfprintf(stderr, fmt, args);
+    fprintf(stderr, "\n");
     va_end(args);
     exit(1);
 }

@@ -29,7 +29,7 @@ bool is_dir(const char* path) {
 void init_package_search_paths(void) {
     const char *ionhome_var = getenv("IONHOME");
     if (!ionhome_var) {
-        printf("error: Set the environment variable IONHOME to the Ion home directory (where system_packages is located)\n");
+        fprintf(stderr, "error: Set the environment variable IONHOME to the Ion home directory (where system_packages is located)\n");
         exit(1);
     }
     char path[MAX_PATH];
@@ -53,7 +53,7 @@ void init_package_search_paths(void) {
     for (int i = 0; i < num_package_search_paths; i++) {
         const char* path = package_search_paths[i];
         if (!is_dir(path)) {
-            printf("error: package search path '%s' isn't a valid directory.\n", path);
+            fprintf(stderr, "error: package search path '%s' isn't a valid directory.\n", path);
             exit(1);
         }
     }
@@ -72,7 +72,7 @@ void parse_env_vars(void) {
     if (ionos_var) {
         int os = get_os(ionos_var);
         if (os == -1) {
-            printf("Unknown target operating system in IONOS environment variable: %s\n", ionos_var);
+            fprintf(stderr, "Unknown target operating system in IONOS environment variable: %s\n", ionos_var);
         } else {
             target_os = os;
         }
@@ -81,7 +81,7 @@ void parse_env_vars(void) {
     if (ionarch_var) {
         int arch = get_arch(ionarch_var);
         if (arch == -1) {
-            printf("Unknown target architecture in IONARCH environment variable: %s\n", ionarch_var);
+            fprintf(stderr, "Unknown target architecture in IONARCH environment variable: %s\n", ionarch_var);
         } else {
             target_arch = arch;
         }
@@ -115,7 +115,7 @@ int ion_main(int argc, const char **argv) {
     init_compiler();
     builtin_package = import_package("builtin");
     if (!builtin_package) {
-        printf("error: Failed to compile package 'builtin'.\n");
+        fprintf(stderr, "error: Failed to compile package 'builtin'.\n");
         return 1;
     }
     builtin_package->external_name = str_intern("");
@@ -123,7 +123,7 @@ int ion_main(int argc, const char **argv) {
     postinit_builtin();
     Sym *any_sym = resolve_name(str_intern("any"));
     if (!any_sym || any_sym->kind != SYM_TYPE) {
-        printf("error: any type not defined in builtins");
+        fprintf(stderr, "error: any type not defined in builtins");
         return 1;
     }
     type_any = any_sym->type;
@@ -136,13 +136,13 @@ int ion_main(int argc, const char **argv) {
 
     Package *main_package = import_package(package_name);
     if (!main_package) {
-        printf("error: Failed to compile package '%s'\n", package_name);
+        fprintf(stderr, "error: Failed to compile package '%s'\n", package_name);
         return 1;
     }
     const char *main_name = str_intern("main");
     Sym *main_sym = get_package_sym(main_package, main_name);
     if (!main_sym) {
-        printf("error: No 'main' entry point defined in package '%s'\n", package_name);
+        fprintf(stderr, "error: No 'main' entry point defined in package '%s'\n", package_name);
         return 1;
     }
     main_sym->external_name = main_name;
@@ -176,7 +176,7 @@ int ion_main(int argc, const char **argv) {
         const char *c_code = gen_buf;
         gen_buf = NULL;
         if (!write_file(c_path, c_code, buf_len(c_code))) {
-            printf("error: Failed to write file: %s\n", c_path);
+            fprintf(stderr, "error: Failed to write file: %s\n", c_path);
             return 1;
         }
         printf("Generated %s\n", c_path);

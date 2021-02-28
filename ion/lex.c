@@ -305,9 +305,9 @@ void warning(SrcPos pos, const char *fmt, ...) {
     }
     va_list args;
     va_start(args, fmt);
-    printf("%s(%d): warning: ", pos.name, pos.line);
-    vprintf(fmt, args);
-    printf("\n");
+    fprintf(stderr, "%s(%d): warning: ", pos.name, pos.line);
+    vfprintf(stderr, fmt, args);
+    fprintf(stderr, "\n");
     va_end(args);
 }
 
@@ -317,9 +317,9 @@ void error(SrcPos pos, const char *fmt, ...) {
     }
     va_list args;
     va_start(args, fmt);
-    printf("%s(%d): error: ", pos.name, pos.line);
-    vprintf(fmt, args);
-    printf("\n");
+    fprintf(stderr, "%s(%d): error: ", pos.name, pos.line);
+    vfprintf(stderr, fmt, args);
+    fprintf(stderr, "\n");
     va_end(args);
 }
 

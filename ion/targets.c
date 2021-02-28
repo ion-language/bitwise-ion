@@ -125,7 +125,7 @@ void init_target(void) {
         break;
     }
     if (!type_metrics) {
-        printf("Unsupported os/arch combination: %s/%s\n", os_names[target_os], arch_names[target_arch]);
+        fprintf(stderr, "Unsupported os/arch combination: %s/%s\n", os_names[target_os], arch_names[target_arch]);
         exit(1);
     }
     if (type_metrics[TYPE_PTR].size == 4) {
