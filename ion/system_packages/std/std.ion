@@ -732,6 +732,11 @@ func ahdr_func(a: void*, elem_size: usize, elem_align: usize): Ahdr* {
     return a ? (:Ahdr*)(a - ahdrsize_func(elem_size, elem_align)) : 0;
 }
 
+@debugging
+func ahdr_for_debugging(a: void*, elem_size: usize, elem_align: usize): Ahdr* {
+    return ahdr_func(a, elem_size, elem_align);
+}
+
 @inline
 func alen_func(a: void*, elem_size: usize, elem_align: usize): usize {
     return a ? ahdr_func(a, elem_size, elem_align).len : 0;
@@ -1254,6 +1259,7 @@ func apop(a: void*) {
 @foreign @intrinsic
 func anew(allocator: Allocator*): void* {
     anew_func;
+    ahdr_for_debugging; // emit it to help debuggers
     #foreign(preamble = "#define anew(t, allocator) (std_anew_func((allocator), sizeof(t), alignof(t)))");
     return 0;
 }
