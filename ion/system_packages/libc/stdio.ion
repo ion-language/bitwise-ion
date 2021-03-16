@@ -15,8 +15,14 @@ var stderr: FILE*;
 @foreign
 struct fpos_t;
 
+// @strong typedef for va_list to prevent mistakes with string arguments.
+struct VAList
+{
+    bytes: char*;
+}
+
 @foreign
-typedef va_list = char*;
+typedef va_list = VAList;
 
 @foreign const EOF      = -1;
 @foreign const SEEK_SET = 0;
@@ -160,4 +166,3 @@ func ferror(stream: FILE*): int;
 
 @foreign
 func perror(s: char const*);
-
