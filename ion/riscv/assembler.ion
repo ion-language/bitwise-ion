@@ -567,7 +567,7 @@ func asm_error(asm: Assembler*, fmt: char const*, ...) {
     args: va_list;
     va_start(&args, &fmt);
     asm_verror(asm, fmt, args);
-    va_end(&args);  
+    va_end(&args);
     exit(1);
 }
 
@@ -1685,7 +1685,8 @@ func cmd_sub(asm: Assembler*) {
             asm_error(asm, "Immediate is out of range");
         }
         asm_imm_op(asm, ADDI, rd, rs1, uint32(imm));
-    }}
+    }
+}
 
 func init_cmds(asm: Assembler*) {
     num_cmds := sizeof(cmd_defs) / sizeof(*cmd_defs);
@@ -2567,11 +2568,10 @@ getchar:
     bus := &Bus{ram = asm.buf, ram_start = 0, ram_end = asm.buf_size};
     hart := &Hart{
         pc = 0,
-        bus = bus,      
+        bus = bus,
         breakpoint = {callback = breakpoint_callback},
         trace_load_callback = trace_load_callback,
         trace_store_callback = trace_store_callback,
     };
     cmd_loop(hart);
 }
-
