@@ -1016,6 +1016,25 @@ Type *resolve_decl_func(Decl *decl) {
     assert(decl->kind == DECL_FUNC);
     bool foreign = get_decl_note(decl, foreign_name) != NULL;
     bool intrinsic = get_decl_note(decl, intrinsic_name) != NULL;
+    Note *printf_note = get_decl_note(decl, printf_name);
+    size_t index_of_printf_format_param = decl->func.num_params;
+    if (printf_note) {
+      if (printf_note->num_args != 1 || printf_note->args[0].expr == NULL ||  printf_note->args[0].expr->kind != EXPR_NAME) {
+        fatal_error(decl->pos, "@printf expects a single name parameter.");
+      } else {
+        const char *format_param_name = str_intern(printf_note->args[0].expr->name);
+        bool found_format_param = false;
+        for (size_t i = 0; i < decl->func.num_params; i++) {
+          FuncParam param = decl->func.params[i];
+          if (str_intern(param.name) == format_param_name) {
+            index_of_printf_format_param = i;
+          }
+        }
+        if (index_of_printf_format_param >= decl->func.num_params) {
+          fatal_error(decl->pos, "@printf expects the name of the format parameter, %s could not be found.", format_param_name);
+        }
+      }
+    }
     bool with_const = foreign;
     Type **params = NULL;
     for (size_t i = 0; i < decl->func.num_params; i++) {
@@ -1024,6 +1043,12 @@ Type *resolve_decl_func(Decl *decl) {
         complete_type(param);
         if (param == type_void && !foreign) {
             fatal_error(decl->pos, "Function parameter type cannot be void");
+        }
+        if (i == index_of_printf_format_param) {
+          bool is_format_type = param->kind == TYPE_PTR && (param->base->kind == TYPE_CHAR || (param->base->kind == TYPE_CONST && param->base->base->kind == TYPE_CHAR));
+          if (!is_format_type) {
+            fatal_error(decl->pos, "Function parameter %s must be (:char*) since it's expected to be a printf format string.", decl->func.params[i].name);
+          }
         }
         buf_push(params, param);
     }

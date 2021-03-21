@@ -24,10 +24,12 @@ func sdup(allocator: Allocator*, str: char const*): char* {
     return new_str;
 }
 
+@printf(fmt)
 func sprintfv(buf: char*, size: usize, fmt: char const*, args: libc.va_list): int {
     return libc.vsnprintf(buf, size, fmt, args);
 }
 
+@printf(fmt)
 func sprintf(buf: char*, size: usize, fmt: char const*, ...): int {
     args: libc.va_list;
     libc.va_start(args, fmt);
@@ -36,6 +38,7 @@ func sprintf(buf: char*, size: usize, fmt: char const*, ...): int {
     return res;
 }
 
+@printf(fmt)
 func strfv(allocator: Allocator*, fmt: char const*, args: libc.va_list): char* {
     targs: libc.va_list;
     libc.va_copy(targs, args);
@@ -45,6 +48,7 @@ func strfv(allocator: Allocator*, fmt: char const*, args: libc.va_list): char* {
     return str;
 }
 
+@printf(fmt)
 func strf(allocator: Allocator*, fmt: char const*, ...): char* {
     args: libc.va_list;
     libc.va_start(args, fmt);
@@ -872,6 +876,7 @@ func acat_func(ap_: void*, src: void*, elem_size: usize, elem_align: usize) {
     acatn_func(ap_, src, alen_func(src, elem_size, elem_align), elem_size, elem_align);
 }
 
+@printf(fmt)
 func aprintf_func(ap_: void*, fmt: char const*, ...) {
     ap: void** = ap_;
     a := *ap;
@@ -1049,6 +1054,7 @@ func adel_func(a: void*, x: void const*, key_size: usize, elem_size: usize, elem
 // (a, ...)
 
 @foreign
+@printf(fmt)
 func aprintf(a: char*, fmt: char const*, ...) {
     aprintf_func;
     #foreign(preamble = "#define aprintf(a, fmt, ...) std_aprintf_func(&(a), (fmt) ,## __VA_ARGS__)");

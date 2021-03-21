@@ -31,6 +31,7 @@ const char **keywords;
 
 const char *always_name;
 const char *foreign_name;
+const char *printf_name;
 const char *inline_name;
 const char *complete_name;
 const char *assert_name;
@@ -79,6 +80,7 @@ void init_keywords(void) {
 
     always_name = str_intern("always");
     foreign_name = str_intern("foreign");
+    printf_name = str_intern("printf");
     inline_name = str_intern("inline");
     complete_name = str_intern("complete");
     assert_name = str_intern("assert");

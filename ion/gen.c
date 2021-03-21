@@ -291,12 +291,35 @@ void gen_func_decl(Decl *decl) {
     }
     buf_printf(result, ")");
     gen_sync_pos(decl->pos);
+
+    Note *printf_note;
+    if ((printf_note = get_decl_note(decl, printf_name))) {
+      assert(printf_note->num_args == 1);
+      NoteArg arg = printf_note->args[0];
+      assert(arg.expr && arg.expr->kind == EXPR_NAME);
+
+      const char *format_string_param = arg.expr->name;
+      assert(format_string_param);
+
+      int index_of_fmt_argument = 0;
+      for (size_t i = 0; i < decl->func.num_params; i++) {
+        FuncParam param = decl->func.params[i];
+        if (param.name == format_string_param) {
+          index_of_fmt_argument = i + 1;
+          break;
+        }
+      }
+      int index_of_first_argument_to_check = decl->func.has_varargs? decl->func.num_params+1 : 0;
+      genlnf("FORMAT_PRINTF(%d, %d)", index_of_fmt_argument, index_of_first_argument_to_check);
+    }
+
     if (get_decl_note(decl, inline_name)) {
         genlnf("INLINE");
     }
     if (get_decl_note(decl, str_intern("noinline"))) {
         genlnf("NOINLINE");
     }
+
     if (decl->func.ret_type) {
         char *temp = 0;
         gen_decl_from_typespec(&temp, decl->func.ret_type, result);

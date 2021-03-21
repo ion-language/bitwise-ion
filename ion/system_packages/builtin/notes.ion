@@ -33,6 +33,12 @@
 #pragma GCC diagnostic ignored "-Wvarargs"
 #endif
 
+#if __GNUC__ || __clang__
+#define FORMAT_PRINTF(string__, first_to_check__) __attribute__ ((format (printf, string__, first_to_check__)))
+#else
+#define FORMAT_PRINTF(string__, first_to_check__)
+#endif
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
