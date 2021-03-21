@@ -638,7 +638,7 @@ void set_resolved_val(void *ptr, Val val) {
 Map reachable_map;
 
 void set_reachable(void *ptr) {
-    map_put(&reachable_map, ptr, (void *)reachable_phase);
+    map_put(&reachable_map, ptr, (void *)(intptr_t)reachable_phase);
 }
 
 uint8_t get_reachable(void *ptr) {

@@ -859,7 +859,7 @@ func adeln_func(a: void*, i: usize, n: usize, elem_size: usize, elem_align: usiz
     ahdr_func(a, elem_size, elem_align).len -= n;
 }
 
-func acatn_func(ap_: void**, src: void const*, src_len: usize, elem_size: usize, elem_align: usize) {
+func acatn_func(ap_: void*, src: void const*, src_len: usize, elem_size: usize, elem_align: usize) {
     ap: void** = ap_;
     a := *ap;
     len := alen_func(a, elem_size, elem_align);
